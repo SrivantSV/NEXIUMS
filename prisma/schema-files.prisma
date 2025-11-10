@@ -1,0 +1,104 @@
+// File Management Schema
+// Add this to your main schema.prisma file
+
+model File {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // File information
+  fileName     String
+  fileType     String
+  fileSize     Int
+  category     String   @default("other")
+  extension    String?
+  storageUrl   String?
+  thumbnailUrl String?
+  checksum     String?
+
+  // Processing results
+  textContent  String?  @db.Text
+  metadata     Json?
+  analysis     Json?
+
+  // Search and indexing
+  tags         String[]
+
+  // Status
+  status          String   @default("pending")
+  processingTime  Int      @default(0)
+  error           String?  @db.Text
+
+  // Security
+  securityScan    Json?
+
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  messages     Message[]     @relation("FileMessages")
+  embeddings   FileEmbedding[]
+  versions     FileVersion[]
+
+  @@index([userId])
+  @@index([category])
+  @@index([fileType])
+  @@index([createdAt])
+  @@index([tags])
+}
+
+model FileEmbedding {
+  id         String   @id @default(cuid())
+  fileId     String
+  file       File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  chunkIndex Int
+  text       String   @db.Text
+  embedding  Float[]
+
+  metadata   Json?
+
+  createdAt  DateTime @default(now())
+
+  @@index([fileId])
+  @@index([fileId, chunkIndex])
+}
+
+model FileVersion {
+  id         String   @id @default(cuid())
+  fileId     String
+  file       File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  versionNumber Int
+  fileName      String
+  fileSize      Int
+  storageUrl    String
+  checksum      String?
+
+  changes       String?  @db.Text
+  createdBy     String
+  createdAt     DateTime @default(now())
+
+  @@index([fileId])
+  @@index([fileId, versionNumber])
+  @@unique([fileId, versionNumber])
+}
+
+model FileShare {
+  id         String   @id @default(cuid())
+  fileId     String
+  sharedBy   String
+  sharedWith String?  // null means public
+
+  permissions String[] // ["read", "write", "delete"]
+  expiresAt   DateTime?
+
+  createdAt   DateTime @default(now())
+
+  @@index([fileId])
+  @@index([sharedWith])
+}
+
+// Add this to your existing User model:
+// files     File[]
