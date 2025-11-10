@@ -1,0 +1,233 @@
+// Prisma schema for Nexus AI
+// Database schema for usage tracking, analytics, and user management
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id                String          @id @default(uuid())
+  email             String          @unique
+  passwordHash      String
+  name              String?
+  apiKey            String?         @unique
+  subscriptionTier  SubscriptionTier @default(FREE)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relations
+  usageRecords      UsageRecord[]
+  feedback          Feedback[]
+  preferences       UserPreference?
+  projects          Project[]
+
+  @@index([email])
+  @@index([apiKey])
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+model UserPreference {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  preferredModels   String[]
+  avoidModels       String[]
+  maxCostPerRequest Float?
+  minQualityScore   Float?
+  prioritizeCost    Boolean  @default(false)
+  prioritizeSpeed   Boolean  @default(false)
+  prioritizeQuality Boolean  @default(true)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Project Management
+model Project {
+  id          String        @id @default(uuid())
+  name        String
+  description String?
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  usageRecords UsageRecord[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([userId])
+}
+
+// Usage Tracking
+model UsageRecord {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId         String?
+  project           Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  modelId           String
+  provider          String
+  requestId         String   @unique
+
+  // Request details
+  inputTokens       Int
+  outputTokens      Int
+  totalTokens       Int
+
+  // Performance metrics
+  latency           Int      // milliseconds
+  cost              Float
+
+  // Status
+  success           Boolean
+  errorMessage      String?
+  finishReason      String?
+
+  // Metadata
+  intent            String?
+  complexity        Float?
+  routedBy          String?  // 'manual' or 'smart-router'
+
+  timestamp         DateTime @default(now())
+
+  @@index([userId])
+  @@index([modelId])
+  @@index([projectId])
+  @@index([timestamp])
+}
+
+// User Feedback
+model Feedback {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  modelId     String
+  requestId   String
+
+  rating      Int      // 1-5
+  qualityScore Float?
+  speedScore  Float?
+  valueScore  Float?
+  comments    String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([modelId])
+  @@index([rating])
+}
+
+// Model Performance Metrics
+model ModelMetrics {
+  id                String   @id @default(uuid())
+  modelId           String   @unique
+
+  // Aggregated metrics
+  totalRequests     Int      @default(0)
+  successfulRequests Int     @default(0)
+  failedRequests    Int      @default(0)
+
+  avgLatency        Float
+  avgCost           Float
+  avgQuality        Float
+  avgUserRating     Float?
+
+  // Tokens
+  totalInputTokens  BigInt   @default(0)
+  totalOutputTokens BigInt   @default(0)
+
+  // Last updated
+  lastUpdated       DateTime @updatedAt
+
+  @@index([modelId])
+}
+
+// A/B Tests
+model ABTest {
+  id            String       @id @default(uuid())
+  name          String
+  modelA        String
+  modelB        String
+  trafficSplit  Int          @default(50)
+  status        TestStatus   @default(ACTIVE)
+
+  startDate     DateTime     @default(now())
+  endDate       DateTime?
+
+  results       TestResult[]
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([status])
+}
+
+enum TestStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+model TestResult {
+  id          String   @id @default(uuid())
+  testId      String
+  test        ABTest   @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  modelId     String
+
+  latency     Int
+  cost        Float
+  success     Boolean
+  userRating  Float?
+
+  timestamp   DateTime @default(now())
+
+  @@index([testId])
+  @@index([modelId])
+}
+
+// API Keys
+model ApiKey {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  name        String
+  userId      String
+
+  rateLimit   Int      @default(100)
+  isActive    Boolean  @default(true)
+
+  lastUsed    DateTime?
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime?
+
+  @@index([key])
+  @@index([userId])
+}
+
+// Rate Limiting
+model RateLimit {
+  id          String   @id @default(uuid())
+  identifier  String   // userId or IP address
+  endpoint    String
+
+  requestCount Int     @default(0)
+  windowStart DateTime @default(now())
+
+  @@unique([identifier, endpoint])
+  @@index([identifier])
+  @@index([windowStart])
+}
