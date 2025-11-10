@@ -1,0 +1,231 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum ArtifactType {
+  REACT_COMPONENT
+  VUE_COMPONENT
+  SVELTE_COMPONENT
+  ANGULAR_COMPONENT
+  HTML_PAGE
+  JAVASCRIPT
+  TYPESCRIPT
+  PYTHON_SCRIPT
+  NODE_SCRIPT
+  SHELL_SCRIPT
+  SQL_QUERY
+  DOCKERFILE
+  KUBERNETES_YAML
+  MARKDOWN_DOCUMENT
+  LATEX_DOCUMENT
+  JSON_SCHEMA
+  API_SPEC
+  README
+  DATA_TABLE
+  CHART
+  DASHBOARD
+  SQL_RESULTS
+  CSV_DATA
+  JSON_DATA
+  SVG_GRAPHIC
+  MERMAID_DIAGRAM
+  FLOWCHART
+  SEQUENCE_DIAGRAM
+  MIND_MAP
+  WIREFRAME
+  UI_MOCKUP
+  WEB_APP
+  GAME
+  SIMULATION
+  CALCULATOR
+  FORM
+  JUPYTER_NOTEBOOK
+  ML_MODEL
+  DATASET
+  TRAINING_SCRIPT
+}
+
+enum Language {
+  JAVASCRIPT
+  TYPESCRIPT
+  PYTHON
+  HTML
+  CSS
+  JSX
+  TSX
+  VUE
+  SVELTE
+  SQL
+  SHELL
+  DOCKER
+  YAML
+  MARKDOWN
+  LATEX
+  JSON
+}
+
+enum ExecutionStatus {
+  PENDING
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  TIMEOUT
+  CANCELLED
+}
+
+enum SharePermission {
+  READ
+  WRITE
+  EXECUTE
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  password      String
+  avatar        String?
+  role          UserRole  @default(USER)
+  emailVerified Boolean   @default(false)
+  bio           String?
+  website       String?
+  location      String?
+  github        String?
+  twitter       String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  artifacts     Artifact[]
+  executions    Execution[]
+  versions      ArtifactVersion[]
+  shareLinks    ShareLink[]
+  templates     ArtifactTemplate[]
+
+  @@index([email])
+}
+
+model Artifact {
+  id           String       @id @default(uuid())
+  title        String
+  description  String?
+  type         ArtifactType
+  language     Language
+  content      String       @db.Text
+  dependencies String[]     @default([])
+  metadata     Json?
+  version      Int          @default(1)
+  tags         String[]     @default([])
+  isPublic     Boolean      @default(false)
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  executions   Execution[]
+  versions     ArtifactVersion[]
+  shareLinks   ShareLink[]
+
+  @@index([userId])
+  @@index([type])
+  @@index([isPublic])
+  @@index([createdAt])
+}
+
+model ArtifactVersion {
+  id         String   @id @default(uuid())
+  artifactId String
+  artifact   Artifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  version    Int
+  content    String   @db.Text
+  diff       String?  @db.Text
+  message    String?
+  createdBy  String
+  user       User     @relation(fields: [createdBy], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@index([artifactId])
+  @@index([version])
+}
+
+model Execution {
+  id            String          @id @default(uuid())
+  artifactId    String
+  artifact      Artifact        @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User            @relation(fields: [userId], references: [id])
+  status        ExecutionStatus @default(PENDING)
+  output        String?         @db.Text
+  error         String?         @db.Text
+  exitCode      Int?
+  stdout        String?         @db.Text
+  stderr        String?         @db.Text
+  duration      Int?
+  resourceUsage Json?
+  input         Json?
+  startedAt     DateTime        @default(now())
+  completedAt   DateTime?
+
+  @@index([artifactId])
+  @@index([userId])
+  @@index([status])
+  @@index([startedAt])
+}
+
+model ShareLink {
+  id             String            @id @default(uuid())
+  artifactId     String
+  artifact       Artifact          @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  shareCode      String            @unique
+  permissions    SharePermission[] @default([READ])
+  expiresAt      DateTime?
+  password       String?
+  allowComments  Boolean           @default(false)
+  allowDownload  Boolean           @default(true)
+  viewCount      Int               @default(0)
+  createdBy      String
+  user           User              @relation(fields: [createdBy], references: [id])
+  createdAt      DateTime          @default(now())
+
+  @@index([shareCode])
+  @@index([artifactId])
+}
+
+model ArtifactTemplate {
+  id           String       @id @default(uuid())
+  name         String
+  description  String
+  type         ArtifactType
+  language     Language
+  category     String
+  tags         String[]     @default([])
+  content      String       @db.Text
+  dependencies String[]     @default([])
+  metadata     Json?
+  previewImage String?
+  isOfficial   Boolean      @default(false)
+  downloads    Int          @default(0)
+  rating       Float        @default(0)
+  createdBy    String
+  user         User         @relation(fields: [createdBy], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([category])
+  @@index([type])
+  @@index([isOfficial])
+  @@index([downloads])
+}
