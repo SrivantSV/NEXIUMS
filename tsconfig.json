@@ -1,9 +1,6 @@
 {
   "compilerOptions": {
-<<<<<<< HEAD
-<<<<<<< HEAD
     "target": "ES2020",
-<<<<<<< HEAD
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "jsx": "preserve",
     "module": "ESNext",
@@ -25,55 +22,11 @@
       "@/components/*": ["./src/components/*"],
       "@/app/*": ["./src/app/*"]
     },
-=======
-=======
->>>>>>> origin/claude/projects-memory-system-011CUzv97cw1JEpNf3XL2KhQ
-=======
-    "target": "ES2020",
->>>>>>> origin/claude/team-collaboration-features-011CUzvDdFG4Rac9K58kihU4
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true,
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> origin/claude/mcp-integration-framework-011CUzv5zqoN6kUzRrxTq7Br
-=======
->>>>>>> origin/claude/projects-memory-system-011CUzv97cw1JEpNf3XL2KhQ
-=======
->>>>>>> origin/claude/team-collaboration-features-011CUzvDdFG4Rac9K58kihU4
     "plugins": [
       {
         "name": "next"
       }
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
     ]
-=======
-=======
->>>>>>> origin/claude/projects-memory-system-011CUzv97cw1JEpNf3XL2KhQ
-=======
->>>>>>> origin/claude/team-collaboration-features-011CUzvDdFG4Rac9K58kihU4
-    ],
-    "paths": {
-      "@/*": ["./src/*"]
-    }
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> origin/claude/mcp-integration-framework-011CUzv5zqoN6kUzRrxTq7Br
-=======
->>>>>>> origin/claude/projects-memory-system-011CUzv97cw1JEpNf3XL2KhQ
-=======
->>>>>>> origin/claude/team-collaboration-features-011CUzvDdFG4Rac9K58kihU4
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
