@@ -1,338 +1,259 @@
-# Nexus AI - Chat Interface & Real-Time Communication System
+# NEXIUMS - AI-Powered Artifacts & Code Execution Platform
 
-A comprehensive, production-ready chat interface with advanced real-time collaboration features built for Nexus AI.
+A comprehensive platform for creating, executing, and sharing code artifacts with AI assistance.
 
-## 🚀 Features
+## Features
 
-### Advanced Chat Interface
-- ✅ **Rich Message Support**: Text, code, images, files, and artifacts
-- ✅ **Message Management**: Edit, delete, react, reply, bookmark, and share messages
-- ✅ **Real-time Collaboration**: Live typing indicators, presence awareness, and shared cursors
-- ✅ **Advanced Input**: Rich text editing with Markdown, code syntax highlighting, and auto-complete
-- ✅ **File Handling**: Drag-and-drop uploads, paste images, multiple file support
-- ✅ **Voice Features**: Voice recording and transcription capabilities
-- ✅ **Emoji Support**: Built-in emoji picker for reactions and messages
-- ✅ **@Mentions**: Tag and notify team members in conversations
-- ✅ **Thread Replies**: Organize discussions with threaded conversations
-- ✅ **Message Search**: Advanced search with filtering by user, date, model, and content type
-- ✅ **Virtual Scrolling**: Optimized performance for thousands of messages
-- ✅ **Accessibility**: WCAG 2.1 compliant with keyboard shortcuts and screen reader support
-- ✅ **Mobile Responsive**: Fully responsive design that works on all devices
+- **Multi-Language Support**: Execute JavaScript, TypeScript, Python, HTML, React, Vue, Svelte, and more
+- **Secure Execution**: Docker-based sandboxed environment with resource limits
+- **Live Preview**: Real-time preview for web-based artifacts
+- **Version Control**: Complete version history with diff viewing and rollback
+- **Collaboration**: Real-time collaborative editing
+- **AI Integration**: AI-powered code generation and assistance
+- **Template Library**: Pre-built templates for common use cases
+- **Sharing & Embedding**: Share artifacts via links or embed them
 
-### Real-Time Communication
-- ✅ **WebSocket Manager**: Robust WebSocket connection with auto-reconnect
-- ✅ **Presence System**: Track online users and their status
-- ✅ **Typing Indicators**: See when others are typing in real-time
-- ✅ **Live Updates**: Messages appear instantly across all connected clients
-- ✅ **Heartbeat Monitoring**: Automatic connection health checks
-- ✅ **Event System**: Comprehensive event handling for all real-time features
-
-### Developer Experience
-- ✅ **TypeScript**: Fully typed for better development experience
-- ✅ **Component Library**: Reusable UI components (Button, Input, Avatar, Tooltip, etc.)
-- ✅ **Custom Hooks**: React hooks for real-time features, voice recording, and more
-- ✅ **Modular Architecture**: Clean separation of concerns
-- ✅ **Extensible**: Easy to add new features and customize
-
-## 📦 Tech Stack
-
-- **Framework**: Next.js 14 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS with custom design system
-- **Real-time**: WebSocket with custom manager
-- **UI Components**: Custom component library with shadcn/ui patterns
-- **Markdown**: react-markdown with syntax highlighting
-- **Virtual Scrolling**: react-virtuoso for performance
-- **Emoji**: emoji-picker-react
-- **Voice**: Web Audio API with MediaRecorder
-
-## 🏗️ Project Structure
+## Architecture
 
 ```
-src/
-├── app/                          # Next.js app directory
-│   ├── layout.tsx               # Root layout
-│   ├── page.tsx                 # Home page with chat demo
-│   └── globals.css              # Global styles and animations
-├── components/
-│   ├── chat/                    # Chat-specific components
-│   │   ├── ChatInterface.tsx   # Main chat component
-│   │   ├── ChatInput.tsx       # Advanced input with features
-│   │   ├── Message.tsx         # Message display with actions
-│   │   ├── MessageContent.tsx  # Content renderer (markdown, artifacts)
-│   │   └── ChatSearch.tsx      # Search and filtering
-│   └── ui/                      # Reusable UI components
-│       ├── Button.tsx
-│       ├── Input.tsx
-│       ├── Avatar.tsx
-│       └── Tooltip.tsx
-├── hooks/                        # Custom React hooks
-│   ├── useRealTimePresence.ts  # Presence and typing indicators
-│   ├── useRealTimeMessages.ts  # Message real-time updates
-│   └── useVoiceRecording.ts    # Voice recording functionality
-├── lib/
-│   ├── realtime/
-│   │   └── websocket.ts        # WebSocket manager
-│   └── utils.ts                 # Utility functions
-└── types/
-    └── chat.ts                  # TypeScript interfaces and types
+NEXIUMS/
+├── frontend/      # Next.js 14 + React + TypeScript
+├── backend/       # Express + Prisma + PostgreSQL
+├── executor/      # Code execution service
+├── shared/        # Shared types and utilities
+└── docker/        # Docker configurations
 ```
 
-## 🚦 Getting Started
+## Tech Stack
+
+### Frontend
+- Next.js 14 (App Router)
+- React 18
+- TypeScript
+- Tailwind CSS
+- Monaco Editor
+- Shadcn UI
+
+### Backend
+- Node.js 20
+- Express
+- Prisma ORM
+- PostgreSQL
+- Redis
+- JWT Authentication
+
+### Executor
+- Docker
+- VM2 (JavaScript sandboxing)
+- Python subprocess
+- Resource limiting
+
+## Quick Start
 
 ### Prerequisites
-- Node.js 18+ and npm/yarn/pnpm
-- A modern browser with WebSocket support
+- Node.js 20+
+- Docker & Docker Compose
+- PostgreSQL 15+
+- Redis 7+
 
 ### Installation
 
-1. **Install dependencies**:
+1. Clone the repository:
 ```bash
-npm install
-# or
-yarn install
-# or
-pnpm install
+git clone https://github.com/SrivantSV/NEXIUMS.git
+cd NEXIUMS
 ```
 
-2. **Set up environment variables**:
+2. Install dependencies:
+```bash
+# Install all dependencies
+npm run install:all
+
+# Or install individually
+cd frontend && npm install
+cd ../backend && npm install
+cd ../executor && npm install
+```
+
+3. Set up environment variables:
 ```bash
 cp .env.example .env
+# Edit .env with your configuration
 ```
 
-Edit `.env` and configure:
-```env
-NEXT_PUBLIC_WS_URL=ws://localhost:3000
-NEXT_PUBLIC_API_URL=http://localhost:3000/api
-```
-
-3. **Run the development server**:
+4. Start the database:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+docker-compose up -d postgres redis
 ```
 
-4. **Open your browser**:
-Navigate to [http://localhost:3000](http://localhost:3000)
-
-## 💻 Usage
-
-### Basic Usage
-
-```typescript
-import { ChatInterface } from '@/components/chat/ChatInterface';
-
-export default function ChatPage() {
-  const currentUser = {
-    id: 'user-1',
-    email: 'user@example.com',
-    displayName: 'John Doe',
-    status: 'online',
-  };
-
-  return (
-    <div className="h-screen">
-      <ChatInterface
-        conversationId="conv-1"
-        currentUser={currentUser}
-        onMessageSend={(message) => {
-          // Handle message send
-          console.log('New message:', message);
-        }}
-      />
-    </div>
-  );
-}
+5. Run migrations:
+```bash
+cd backend
+npx prisma migrate dev
 ```
 
-### Using Real-Time Hooks
+6. Start the development servers:
+```bash
+# Terminal 1: Backend
+cd backend && npm run dev
 
-```typescript
-import { useRealTimePresence } from '@/hooks/useRealTimePresence';
+# Terminal 2: Frontend
+cd frontend && npm run dev
 
-function MyComponent({ conversationId, userId }) {
-  const {
-    typingUsers,
-    presenceUsers,
-    sendTyping,
-    isConnected
-  } = useRealTimePresence(conversationId, userId);
-
-  // Use the real-time data in your component
-  return (
-    <div>
-      <p>Online users: {presenceUsers.length}</p>
-      {typingUsers.length > 0 && <p>Someone is typing...</p>}
-    </div>
-  );
-}
+# Terminal 3: Executor
+cd executor && npm run dev
 ```
 
-## 🎨 Customization
-
-### Theming
-
-The application supports light and dark modes using CSS variables. Customize colors in `src/app/globals.css`:
-
-```css
-:root {
-  --primary: 222.2 47.4% 11.2%;
-  --primary-foreground: 210 40% 98%;
-  /* ... */
-}
-
-.dark {
-  --primary: 210 40% 98%;
-  --primary-foreground: 222.2 47.4% 11.2%;
-  /* ... */
-}
-```
-
-### Adding Custom Message Types
-
-Extend the `MessageContent` type in `src/types/chat.ts`:
-
-```typescript
-interface MessageContent {
-  type: 'text' | 'image' | 'code' | 'artifact' | 'file' | 'mcp_result' | 'your-custom-type';
-  content: string;
-  metadata?: any;
-}
-```
-
-Then update the renderer in `MessageContent.tsx`.
-
-## 🔌 WebSocket Server
-
-The chat interface expects a WebSocket server at the URL specified in `NEXT_PUBLIC_WS_URL`. The server should handle these message types:
-
-- `user_typing` / `user_stopped_typing`
-- `user_joined` / `user_left`
-- `message_created` / `message_updated` / `message_deleted`
-- `cursor_moved` / `selection_changed`
-- `heartbeat`
-
-Example message format:
-```typescript
-{
-  type: 'message_created',
-  conversationId: 'conv-1',
-  userId: 'user-1',
-  data: { /* message data */ },
-  timestamp: 1234567890
-}
-```
-
-## 📱 Mobile Support
-
-The interface is fully responsive and optimized for mobile devices:
-- Touch-friendly UI elements
-- Swipe gestures support
-- Adaptive layouts
-- Optimized for small screens
-
-## ♿ Accessibility
-
-- WCAG 2.1 Level AA compliant
-- Full keyboard navigation support
-- Screen reader friendly
-- High contrast mode support
-- Focus indicators
-- ARIA labels and roles
-
-## 🧪 Testing
+### Using Docker Compose
 
 ```bash
-# Run type checking
-npm run type-check
-
-# Run linting
-npm run lint
-
-# Build for production
-npm run build
+docker-compose up
 ```
 
-## 🚀 Deployment
+Access the application at http://localhost:3000
 
-### Build for Production
+## API Documentation
+
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `GET /api/auth/me` - Get current user
+
+### Artifacts
+- `POST /api/artifacts` - Create artifact
+- `GET /api/artifacts` - List artifacts
+- `GET /api/artifacts/:id` - Get artifact
+- `PUT /api/artifacts/:id` - Update artifact
+- `DELETE /api/artifacts/:id` - Delete artifact
+- `POST /api/artifacts/:id/execute` - Execute artifact
+- `GET /api/artifacts/:id/versions` - Get version history
+- `POST /api/artifacts/:id/share` - Create share link
+
+## Supported Artifact Types
+
+### Code Artifacts
+- React Component
+- Vue Component
+- Svelte Component
+- Angular Component
+- HTML Page
+- JavaScript/TypeScript
+- Python Script
+- Node.js Script
+- Shell Script
+- SQL Query
+
+### Document Artifacts
+- Markdown Document
+- LaTeX Document
+- JSON Schema
+- API Specification
+
+### Data Artifacts
+- Data Table
+- Chart/Visualization
+- Dashboard
+- CSV Data
+
+### Design Artifacts
+- SVG Graphics
+- Mermaid Diagrams
+- Flowcharts
+- Wireframes
+
+## Security
+
+- Docker-based sandboxing
+- Resource limits (CPU, memory, time)
+- Network isolation
+- Read-only file systems
+- Module whitelisting
+- Input validation
+- JWT authentication
+- CORS protection
+
+## Development
+
+### Project Structure
+
+```
+frontend/src/
+├── app/              # Next.js pages
+├── components/       # React components
+│   ├── artifacts/   # Artifact UI
+│   ├── editor/      # Code editor
+│   └── ui/          # Reusable UI
+├── lib/             # Utilities
+├── hooks/           # Custom hooks
+└── types/           # TypeScript types
+
+backend/src/
+├── controllers/     # Request handlers
+├── models/          # Prisma models
+├── routes/          # API routes
+├── services/        # Business logic
+├── middleware/      # Express middleware
+└── types/           # TypeScript types
+
+executor/src/
+├── sandbox/         # Sandboxing logic
+├── runners/         # Language runners
+├── queue/           # Job queue
+└── docker/          # Docker management
+```
+
+### Testing
 
 ```bash
-npm run build
-npm start
+# Run all tests
+npm test
+
+# Run frontend tests
+cd frontend && npm test
+
+# Run backend tests
+cd backend && npm test
+
+# Run executor tests
+cd executor && npm test
 ```
 
-### Environment Variables for Production
+### Building for Production
 
-Ensure these are set in your production environment:
-- `NEXT_PUBLIC_WS_URL`: Your production WebSocket server URL
-- `NEXT_PUBLIC_API_URL`: Your production API URL
+```bash
+# Build all services
+npm run build:all
 
-## 📄 License
+# Or build individually
+cd frontend && npm run build
+cd backend && npm run build
+cd executor && npm run build
+```
 
-This project is part of the Nexus AI system.
+## Deployment
 
-## 🤝 Contributing
+### Using Docker
 
-This is an internal project. For questions or issues, contact the development team.
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
 
-## 🎯 Roadmap
+### Environment Variables
 
-### Implemented ✅
-- Core chat interface with all features
-- Real-time communication system
-- Voice recording
-- File attachments
-- Message search
-- Reactions and mentions
-- Virtual scrolling
-- Accessibility features
+See `.env.example` for all required environment variables.
 
-### Future Enhancements 🔮
-- End-to-end encryption
-- Video/audio calling
-- Screen sharing
-- Message translation
-- AI-powered search
-- Custom slash commands
-- Integration with external tools
-- Analytics and insights
+## Contributing
 
-## 📚 Documentation
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-For more detailed documentation, see:
-- [Component API Reference](./docs/components.md) (coming soon)
-- [WebSocket Protocol](./docs/websocket.md) (coming soon)
-- [Customization Guide](./docs/customization.md) (coming soon)
+## License
 
-## 💡 Tips
+MIT License - see LICENSE file for details
 
-1. **Performance**: Use virtual scrolling for conversations with 1000+ messages
-2. **Real-time**: Ensure WebSocket server is running for real-time features
-3. **Accessibility**: Test with keyboard navigation and screen readers
-4. **Mobile**: Test on actual devices, not just browser dev tools
-5. **Dark Mode**: Ensure all custom components support dark mode
+## Support
 
-## 🐛 Troubleshooting
-
-### WebSocket Connection Issues
-- Check that `NEXT_PUBLIC_WS_URL` is correctly set
-- Ensure your WebSocket server is running
-- Check browser console for connection errors
-
-### Performance Issues
-- Enable virtual scrolling for large message lists
-- Reduce the number of re-renders by memoizing components
-- Use production build for better performance
-
-### Styling Issues
-- Clear browser cache
-- Check Tailwind CSS configuration
-- Ensure dark mode class is applied correctly
-
----
-
-Built with ❤️ for Nexus AI
+For issues and questions, please open an issue on GitHub.

@@ -1,0 +1,151 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: nexiums-postgres
+    environment:
+      POSTGRES_DB: nexiums
+      POSTGRES_USER: nexiums
+      POSTGRES_PASSWORD: nexiums_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - nexiums_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexiums"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: nexiums-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - nexiums_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nexiums-backend
+    environment:
+      DATABASE_URL: postgresql://nexiums:nexiums_pass@postgres:5432/nexiums
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key}
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 4000
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - nexiums_network
+    restart: unless-stopped
+
+  executor:
+    build:
+      context: ./executor
+      dockerfile: Dockerfile
+    container_name: nexiums-executor
+    environment:
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 5000
+      MAX_EXECUTION_TIME: ${MAX_EXECUTION_TIME:-30000}
+      MAX_MEMORY: ${MAX_MEMORY:-512}
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./executor:/app
+      - /app/node_modules
+      - /var/run/docker.sock:/var/run/docker.sock
+      - executor_temp:/app/temp
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - nexiums_network
+    privileged: true
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nexiums-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NODE_ENV: ${NODE_ENV:-development}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+    networks:
+      - nexiums_network
+    restart: unless-stopped
+
+  # Execution sandboxes (pre-built images for common languages)
+  sandbox-node:
+    image: node:20-alpine
+    container_name: nexiums-sandbox-node
+    command: tail -f /dev/null
+    network_mode: none
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=100m
+      - /workspace:rw,size=500m
+    mem_limit: 512m
+    cpus: 1.0
+    restart: "no"
+
+  sandbox-python:
+    image: python:3.11-alpine
+    container_name: nexiums-sandbox-python
+    command: tail -f /dev/null
+    network_mode: none
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=100m
+      - /workspace:rw,size=500m
+    mem_limit: 512m
+    cpus: 1.0
+    restart: "no"
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  uploads:
+    driver: local
+  executor_temp:
+    driver: local
+
+networks:
+  nexiums_network:
+    driver: bridge

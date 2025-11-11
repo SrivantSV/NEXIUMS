@@ -1,311 +1,316 @@
-# Deployment Guide
+# NEXIUMS Deployment Guide
 
-## Prerequisites
-
-- Node.js 18+ installed
-- PostgreSQL database
-- Redis instance (optional, for caching)
-- API keys for AI providers
-
-## Environment Variables
-
-Create a `.env` file with the following variables:
-
-```env
-# AI Provider API Keys
-ANTHROPIC_API_KEY=sk-ant-...
-OPENAI_API_KEY=sk-...
-GOOGLE_AI_API_KEY=AIza...
-DEEPSEEK_API_KEY=...
-MISTRAL_API_KEY=...
-PERPLEXITY_API_KEY=...
-COHERE_API_KEY=...
-XAI_API_KEY=...
-
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/nexus_ai
-
-# Redis (Optional)
-REDIS_URL=redis://localhost:6379
-
-# Authentication
-JWT_SECRET=your-super-secret-jwt-key-change-this
-JWT_EXPIRES_IN=7d
-
-# Application
-NODE_ENV=production
-NEXT_PUBLIC_API_URL=https://your-domain.com/api
-
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=60000
-RATE_LIMIT_MAX_REQUESTS=100
-
-# Logging
-LOG_LEVEL=info
-LOG_FILE=logs/nexus-ai.log
-```
-
-## Database Setup
-
-### 1. Create Database
-
-```bash
-createdb nexus_ai
-```
-
-### 2. Run Migrations
-
-```bash
-npx prisma generate
-npx prisma migrate deploy
-```
-
-### 3. Seed Database (Optional)
-
-```bash
-npx prisma db seed
-```
-
-## Build for Production
-
-```bash
-# Install dependencies
-npm install
-
-# Build the application
-npm run build
-
-# Start production server
-npm start
-```
+This guide covers deploying NEXIUMS to production environments.
 
 ## Deployment Options
 
-### Option 1: Vercel (Recommended)
+- Docker Compose (Recommended)
+- Kubernetes
+- Cloud Platforms (AWS, GCP, Azure)
+- Vercel (Frontend only)
 
-1. Install Vercel CLI:
+## Prerequisites
+
+- Domain name with DNS access
+- SSL certificate
+- Server with:
+  - 4+ CPU cores
+  - 8GB+ RAM
+  - 50GB+ disk space
+  - Docker installed
+
+## Docker Compose Deployment
+
+### 1. Server Setup
+
 ```bash
-npm install -g vercel
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Install Docker Compose
+sudo apt install docker-compose -y
+
+# Create application directory
+mkdir -p /opt/nexiums
+cd /opt/nexiums
 ```
 
-2. Deploy:
+### 2. Clone Repository
+
 ```bash
-vercel --prod
+git clone https://github.com/SrivantSV/NEXIUMS.git .
 ```
 
-3. Configure environment variables in Vercel dashboard
+### 3. Configure Environment
 
-### Option 2: Docker
-
-1. Build Docker image:
 ```bash
-docker build -t nexus-ai .
+cp .env.example .env
+nano .env
 ```
 
-2. Run container:
+**Required environment variables:**
+
+```env
+# Database
+DATABASE_URL="postgresql://nexiums:CHANGE_THIS_PASSWORD@postgres:5432/nexiums"
+
+# Redis
+REDIS_URL="redis://redis:6379"
+
+# JWT
+JWT_SECRET="CHANGE_THIS_TO_RANDOM_STRING_MIN_32_CHARS"
+
+# URLs
+NEXT_PUBLIC_APP_URL="https://yourdomain.com"
+NEXT_PUBLIC_API_URL="https://api.yourdomain.com"
+
+# Production settings
+NODE_ENV="production"
+```
+
+### 4. Set Up SSL
+
 ```bash
-docker run -p 3000:3000 \
-  -e DATABASE_URL="postgresql://..." \
-  -e ANTHROPIC_API_KEY="..." \
-  nexus-ai
+# Install Certbot
+sudo apt install certbot -y
+
+# Get SSL certificate
+sudo certbot certonly --standalone -d yourdomain.com -d api.yourdomain.com
+
+# Copy certificates
+sudo cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem ./ssl/
+sudo cp /etc/letsencrypt/live/yourdomain.com/privkey.pem ./ssl/
 ```
 
-### Option 3: Traditional Server
+### 5. Deploy
 
-1. Install dependencies:
 ```bash
-npm install --production
+# Build images
+docker-compose -f docker-compose.prod.yml build
+
+# Run migrations
+docker-compose -f docker-compose.prod.yml run backend npx prisma migrate deploy
+
+# Start services
+docker-compose -f docker-compose.prod.yml up -d
+
+# Check status
+docker-compose -f docker-compose.prod.yml ps
 ```
 
-2. Build application:
+### 6. Configure Nginx
+
+```nginx
+# /etc/nginx/sites-available/nexiums
+
+upstream backend {
+    server localhost:4000;
+}
+
+upstream frontend {
+    server localhost:3000;
+}
+
+# Redirect HTTP to HTTPS
+server {
+    listen 80;
+    server_name yourdomain.com api.yourdomain.com;
+    return 301 https://$server_name$request_uri;
+}
+
+# Frontend
+server {
+    listen 443 ssl http2;
+    server_name yourdomain.com;
+
+    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+
+    location / {
+        proxy_pass http://frontend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+
+# Backend API
+server {
+    listen 443 ssl http2;
+    server_name api.yourdomain.com;
+
+    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+
+    location / {
+        proxy_pass http://backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+Enable and reload Nginx:
+
 ```bash
-npm run build
+sudo ln -s /etc/nginx/sites-available/nexiums /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
 ```
 
-3. Use PM2 for process management:
-```bash
-npm install -g pm2
-pm2 start npm --name "nexus-ai" -- start
-pm2 save
-pm2 startup
-```
+## Kubernetes Deployment
 
-## Docker Deployment
-
-Create `Dockerfile`:
-
-```dockerfile
-FROM node:18-alpine AS base
-
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm ci
-
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-ENV NEXT_TELEMETRY_DISABLED 1
-RUN npm run build
-
-FROM base AS runner
-WORKDIR /app
-
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
-
-EXPOSE 3000
-
-ENV PORT 3000
-
-CMD ["node", "server.js"]
-```
-
-Create `docker-compose.yml`:
+### 1. Create Kubernetes Manifests
 
 ```yaml
+# k8s/namespace.yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nexiums
+```
+
+```yaml
+# k8s/postgres.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: nexiums
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        env:
+        - name: POSTGRES_DB
+          value: nexiums
+        - name: POSTGRES_USER
+          value: nexiums
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nexiums-secrets
+              key: database-password
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 10Gi
+```
+
+### 2. Apply Configurations
+
+```bash
+kubectl apply -f k8s/
+```
+
+## Cloud Platform Deployment
+
+### AWS (ECS + RDS)
+
+1. **Create RDS PostgreSQL instance**
+2. **Create ElastiCache Redis cluster**
+3. **Build and push Docker images to ECR**
+4. **Create ECS task definitions**
+5. **Deploy ECS services**
+6. **Configure Application Load Balancer**
+
+### Google Cloud (Cloud Run + Cloud SQL)
+
+1. **Create Cloud SQL PostgreSQL instance**
+2. **Create Memorystore Redis instance**
+3. **Build and push images to GCR**
+4. **Deploy Cloud Run services**
+5. **Configure Cloud Load Balancer**
+
+### Azure (Container Instances + Azure Database)
+
+1. **Create Azure Database for PostgreSQL**
+2. **Create Azure Cache for Redis**
+3. **Build and push images to ACR**
+4. **Deploy Container Instances**
+5. **Configure Application Gateway**
+
+## Monitoring & Logging
+
+### Prometheus + Grafana
+
+```yaml
+# docker-compose.monitoring.yml
 version: '3.8'
 
 services:
-  app:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@db:5432/nexus_ai
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-    depends_on:
-      - db
-      - redis
-
-  db:
-    image: postgres:15
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=nexus_ai
+  prometheus:
+    image: prom/prometheus
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  redis:
-    image: redis:7-alpine
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
     ports:
-      - "6379:6379"
+      - "9090:9090"
 
-volumes:
-  postgres_data:
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
 ```
 
-Deploy with:
-```bash
-docker-compose up -d
-```
+### Log Aggregation
 
-## Performance Optimization
+```yaml
+# docker-compose.logging.yml
+version: '3.8'
 
-### 1. Enable Caching
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
 
-Configure Redis for caching model responses and routing decisions:
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
 
-```typescript
-// In your .env
-REDIS_URL=redis://localhost:6379
-CACHE_TTL=3600
-```
-
-### 2. Database Optimization
-
-- Create indexes on frequently queried fields
-- Use connection pooling
-- Configure read replicas for analytics
-
-### 3. CDN Configuration
-
-Use a CDN for static assets and API responses:
-
-```javascript
-// next.config.js
-module.exports = {
-  async headers() {
-    return [
-      {
-        source: '/api/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, s-maxage=60, stale-while-revalidate=120',
-          },
-        ],
-      },
-    ];
-  },
-};
-```
-
-## Monitoring
-
-### 1. Application Monitoring
-
-Install monitoring tools:
-
-```bash
-npm install @vercel/analytics
-npm install @sentry/nextjs
-```
-
-### 2. Performance Monitoring
-
-Configure performance monitoring:
-
-```typescript
-// pages/_app.tsx
-import { Analytics } from '@vercel/analytics/react';
-
-function MyApp({ Component, pageProps }) {
-  return (
-    <>
-      <Component {...pageProps} />
-      <Analytics />
-    </>
-  );
-}
-```
-
-### 3. Error Tracking
-
-Configure Sentry:
-
-```bash
-npx @sentry/wizard@latest -i nextjs
-```
-
-## Health Checks
-
-Add health check endpoint:
-
-```typescript
-// pages/api/health.ts
-export default function handler(req, res) {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-  });
-}
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.11.0
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 ```
 
 ## Backup Strategy
@@ -313,91 +318,119 @@ export default function handler(req, res) {
 ### Database Backups
 
 ```bash
-# Automated daily backups
-pg_dump nexus_ai > backup_$(date +%Y%m%d).sql
-```
+# Create backup script
+cat > /opt/nexiums/backup.sh << 'EOF'
+#!/bin/bash
+BACKUP_DIR="/opt/nexiums/backups"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-### Backup to S3
+# Backup database
+docker-compose exec -T postgres pg_dump -U nexiums nexiums | gzip > "$BACKUP_DIR/db_$TIMESTAMP.sql.gz"
 
-```bash
-aws s3 cp backup_$(date +%Y%m%d).sql s3://your-bucket/backups/
+# Keep only last 7 days
+find "$BACKUP_DIR" -name "db_*.sql.gz" -mtime +7 -delete
+EOF
+
+chmod +x /opt/nexiums/backup.sh
+
+# Add to crontab (daily at 2 AM)
+(crontab -l 2>/dev/null; echo "0 2 * * * /opt/nexiums/backup.sh") | crontab -
 ```
 
 ## Scaling
 
 ### Horizontal Scaling
 
-Deploy multiple instances behind a load balancer:
+```yaml
+# Scale backend service
+docker-compose -f docker-compose.prod.yml up -d --scale backend=3
 
-```nginx
-upstream nexus_ai {
-    server app1:3000;
-    server app2:3000;
-    server app3:3000;
-}
-
-server {
-    listen 80;
-    server_name api.example.com;
-
-    location / {
-        proxy_pass http://nexus_ai;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
+# Scale executor service
+docker-compose -f docker-compose.prod.yml up -d --scale executor=5
 ```
 
-### Database Scaling
+### Load Balancing
 
-- Read replicas for analytics queries
-- Connection pooling with PgBouncer
-- Sharding for high-volume usage data
+Use Nginx or HAProxy for load balancing multiple instances.
 
-## Security Checklist
+## Health Checks
 
-- [ ] All API keys stored securely in environment variables
-- [ ] HTTPS enabled with valid SSL certificate
-- [ ] Rate limiting configured
-- [ ] CORS policies set appropriately
-- [ ] SQL injection protection enabled
-- [ ] Input validation on all endpoints
-- [ ] Authentication required for all routes
-- [ ] Database credentials rotated regularly
-- [ ] Security headers configured
-- [ ] API versioning implemented
+```bash
+# Backend health
+curl https://api.yourdomain.com/health
+
+# Frontend health
+curl https://yourdomain.com/
+
+# Database health
+docker-compose exec postgres pg_isready -U nexiums
+```
 
 ## Troubleshooting
 
+### Check Logs
+
+```bash
+# All services
+docker-compose -f docker-compose.prod.yml logs -f
+
+# Specific service
+docker-compose -f docker-compose.prod.yml logs -f backend
+
+# Last 100 lines
+docker-compose -f docker-compose.prod.yml logs --tail=100
+```
+
 ### Common Issues
 
-**Database Connection Failed:**
-```bash
-# Check database is running
-pg_isready -h localhost -p 5432
+**Database connection failed:**
+- Check DATABASE_URL in .env
+- Verify PostgreSQL is running
+- Check network connectivity
 
-# Test connection
-psql postgresql://user:password@localhost:5432/nexus_ai
-```
+**Execution timeout:**
+- Increase MAX_EXECUTION_TIME
+- Check executor service logs
+- Verify Docker is running properly
 
-**API Keys Not Working:**
-```bash
-# Verify environment variables are loaded
-node -e "console.log(process.env.ANTHROPIC_API_KEY)"
-```
+**High memory usage:**
+- Check running containers
+- Monitor with `docker stats`
+- Adjust resource limits
 
-**High Memory Usage:**
-```bash
-# Monitor memory
-pm2 monit
+## Security Checklist
 
-# Adjust Node memory limit
-NODE_OPTIONS="--max-old-space-size=4096" npm start
-```
+- [ ] Change all default passwords
+- [ ] Enable firewall (UFW)
+- [ ] Configure fail2ban
+- [ ] Set up SSL/TLS
+- [ ] Enable security headers
+- [ ] Regular security updates
+- [ ] Backup encryption
+- [ ] Database encryption at rest
+- [ ] API rate limiting enabled
+- [ ] CORS properly configured
+
+## Performance Optimization
+
+1. **Enable caching:**
+   - Redis for session storage
+   - CDN for static assets
+   - Browser caching headers
+
+2. **Database optimization:**
+   - Add indexes
+   - Connection pooling
+   - Query optimization
+
+3. **Application optimization:**
+   - Code splitting (frontend)
+   - Lazy loading
+   - Compression enabled
 
 ## Support
 
-For deployment issues:
-- GitHub Issues: https://github.com/your-repo/issues
-- Documentation: https://docs.example.com
-- Email: support@example.com
+For deployment support:
+- Documentation: https://docs.nexiums.dev
+- Issues: https://github.com/SrivantSV/NEXIUMS/issues
+- Discord: https://discord.gg/nexiums
