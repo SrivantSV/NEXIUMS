@@ -1,8 +1,12 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Nexus AI - Advanced AI Model Integration',
-  description: 'Complete AI model integration and smart routing system supporting 25+ AI models',
+  title: 'Nexus AI - Chat Interface',
+  description: 'A world-class chat experience with advanced collaboration features',
 };
 
 export default function RootLayout({
@@ -12,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }

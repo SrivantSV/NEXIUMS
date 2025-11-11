@@ -2,6 +2,10 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  webpack: (config) => {
+    config.externals = [...(config.externals || []), { canvas: 'canvas' }];
+    return config;
+  },
   experimental: {
     serverActions: {
       allowedOrigins: ['localhost:3000'],

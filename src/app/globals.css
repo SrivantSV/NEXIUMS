@@ -10,7 +10,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
+    --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -22,7 +22,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
   }
 
@@ -33,7 +33,7 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -45,7 +45,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --ring: 212.7 26.8% 83.9%;
   }
 }
 
@@ -56,4 +56,113 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-700 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-gray-600;
+}
+
+/* Monaco Editor custom styles */
+.monaco-editor-container {
+  @apply rounded-lg border border-gray-200 dark:border-gray-700;
+}
+
+/* Markdown content styles */
+.markdown-content {
+  @apply prose dark:prose-invert max-w-none;
+}
+
+.markdown-content pre {
+  @apply bg-gray-100 dark:bg-gray-800 rounded-lg p-4 overflow-x-auto;
+}
+
+.markdown-content code {
+  @apply bg-gray-100 dark:bg-gray-800 rounded px-1 py-0.5;
+}
+
+.markdown-content pre code {
+  @apply bg-transparent p-0;
+}
+
+/* Message animations */
+@keyframes message-appear {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-appear {
+  animation: message-appear 0.2s ease-out;
+}
+
+/* Typing indicator animation */
+@keyframes typing-dot {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-8px);
+  }
+}
+
+.typing-dot {
+  animation: typing-dot 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Reaction animation */
+@keyframes reaction-pop {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.reaction-pop {
+  animation: reaction-pop 0.3s ease-out;
+}
+
+/* Presence indicator pulse */
+@keyframes presence-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.presence-pulse {
+  animation: presence-pulse 2s ease-in-out infinite;
 }

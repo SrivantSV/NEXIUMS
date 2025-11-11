@@ -1,125 +1,195 @@
-/**
- * Nexus AI - Home Page
- */
+'use client';
 
-export default function Home() {
+import { ChatInterface } from '@/components/chat/ChatInterface';
+import { ChatMessage, User } from '@/types/chat';
+import { useState } from 'react';
+
+// Mock data for demo
+const mockUser: User = {
+  id: 'user-1',
+  email: 'demo@nexus.ai',
+  displayName: 'Demo User',
+  status: 'online',
+};
+
+const mockMessages: ChatMessage[] = [
+  {
+    id: 'msg-1',
+    conversationId: 'conv-1',
+    userId: 'user-1',
+    userName: 'Demo User',
+    content: 'Hello! Can you help me understand how the chat interface works?',
+    role: 'user',
+    createdAt: new Date(Date.now() - 3600000),
+    updatedAt: new Date(Date.now() - 3600000),
+  },
+  {
+    id: 'msg-2',
+    conversationId: 'conv-1',
+    userId: 'assistant',
+    userName: 'AI Assistant',
+    content: `# Welcome to Nexus AI Chat Interface!
+
+I'd be happy to explain the features:
+
+## Core Features
+- **Real-time messaging** with WebSocket support
+- **Rich text editing** with Markdown support
+- **File attachments** and drag-and-drop uploads
+- **Voice recording** capabilities
+- **Emoji picker** for reactions
+- **@mentions** for collaboration
+- **Message editing and deletion**
+- **Threaded conversations**
+- **Search functionality**
+
+## Advanced Features
+- Virtual scrolling for performance
+- Typing indicators
+- Presence awareness
+- Message reactions
+- Code syntax highlighting
+- Artifact embedding
+
+Try typing \`@\` to mention someone or click the attachment button to upload files!`,
+    role: 'assistant',
+    model: 'smart-router',
+    tokens: {
+      input: 20,
+      output: 150,
+    },
+    cost: 0.0012,
+    createdAt: new Date(Date.now() - 3500000),
+    updatedAt: new Date(Date.now() - 3500000),
+  },
+  {
+    id: 'msg-3',
+    conversationId: 'conv-1',
+    userId: 'user-1',
+    userName: 'Demo User',
+    content: 'That looks amazing! Can you show me a code example?',
+    role: 'user',
+    createdAt: new Date(Date.now() - 3000000),
+    updatedAt: new Date(Date.now() - 3000000),
+  },
+  {
+    id: 'msg-4',
+    conversationId: 'conv-1',
+    userId: 'assistant',
+    userName: 'AI Assistant',
+    content: `Sure! Here's a simple example of how to use the ChatInterface component:
+
+\`\`\`typescript
+import { ChatInterface } from '@/components/chat/ChatInterface';
+
+export default function Page() {
+  const currentUser = {
+    id: 'user-1',
+    email: 'user@example.com',
+    displayName: 'John Doe',
+    status: 'online',
+  };
+
   return (
-    <main className="min-h-screen p-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold mb-4">
-          Nexus AI - Advanced AI Model Integration
-        </h1>
+    <div className="h-screen">
+      <ChatInterface
+        conversationId="conv-1"
+        currentUser={currentUser}
+        onMessageSend={(message) => {
+          console.log('New message:', message);
+        }}
+      />
+    </div>
+  );
+}
+\`\`\`
 
-        <p className="text-xl mb-8 text-gray-600">
-          Complete AI model integration and smart routing system supporting 25+ AI models
-        </p>
+The component handles all the real-time features, message rendering, and user interactions automatically!`,
+    role: 'assistant',
+    model: 'smart-router',
+    tokens: {
+      input: 15,
+      output: 120,
+    },
+    cost: 0.001,
+    artifacts: [
+      {
+        id: 'artifact-1',
+        type: 'code',
+        title: 'ChatInterface Usage Example',
+        content: `import { ChatInterface } from '@/components/chat/ChatInterface';
 
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
-          <div className="border rounded-lg p-6">
-            <h2 className="text-2xl font-semibold mb-3">🤖 25+ Models</h2>
-            <p className="text-gray-600">
-              Anthropic, OpenAI, Google, DeepSeek, Mistral, and more
-            </p>
-          </div>
+export default function Page() {
+  const currentUser = {
+    id: 'user-1',
+    email: 'user@example.com',
+    displayName: 'John Doe',
+    status: 'online',
+  };
 
-          <div className="border rounded-lg p-6">
-            <h2 className="text-2xl font-semibold mb-3">🎯 Smart Router</h2>
-            <p className="text-gray-600">
-              Advanced routing with intent classification and cost optimization
-            </p>
-          </div>
-
-          <div className="border rounded-lg p-6">
-            <h2 className="text-2xl font-semibold mb-3">📊 Analytics</h2>
-            <p className="text-gray-600">
-              Real-time performance tracking and A/B testing
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-gray-50 rounded-lg p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-4">Quick Start</h2>
-
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-semibold mb-2">1. Install Dependencies</h3>
-              <pre className="bg-gray-900 text-white p-3 rounded">
-                npm install
-              </pre>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-2">2. Configure Environment</h3>
-              <pre className="bg-gray-900 text-white p-3 rounded">
-                cp .env.example .env
-              </pre>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-2">3. Run Development Server</h3>
-              <pre className="bg-gray-900 text-white p-3 rounded">
-                npm run dev
-              </pre>
-            </div>
-
-            <div>
-              <h3 className="font-semibold mb-2">4. Make Your First Request</h3>
-              <pre className="bg-gray-900 text-white p-3 rounded overflow-x-auto">
-{`curl -X POST http://localhost:3000/api/ai/chat \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "messages": [
-      {"role": "user", "content": "Hello!"}
+  return (
+    <div className="h-screen">
+      <ChatInterface
+        conversationId="conv-1"
+        currentUser={currentUser}
+        onMessageSend={(message) => {
+          console.log('New message:', message);
+        }}
+      />
+    </div>
+  );
+}`,
+        language: 'typescript',
+        createdAt: new Date(),
+      },
     ],
-    "userId": "demo-user"
-  }'`}
-              </pre>
-            </div>
-          </div>
+    createdAt: new Date(Date.now() - 2500000),
+    updatedAt: new Date(Date.now() - 2500000),
+  },
+];
+
+export default function HomePage() {
+  const [messages, setMessages] = useState<ChatMessage[]>(mockMessages);
+
+  const handleMessageSend = (message: ChatMessage) => {
+    console.log('Message sent:', message);
+    // In a real app, you'd send this to your backend
+  };
+
+  return (
+    <div className="flex flex-col h-screen">
+      {/* Header */}
+      <header className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-3xl font-bold mb-2">Nexus AI Chat Interface</h1>
+          <p className="text-blue-100">
+            A world-class chat experience with advanced collaboration features
+          </p>
         </div>
+      </header>
 
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">API Endpoints</h2>
-
-          <div className="space-y-3">
-            <div className="border-l-4 border-blue-500 pl-4">
-              <code className="font-mono">POST /api/ai/chat</code>
-              <p className="text-gray-600">Generate AI responses with smart routing</p>
-            </div>
-
-            <div className="border-l-4 border-green-500 pl-4">
-              <code className="font-mono">GET /api/ai/models</code>
-              <p className="text-gray-600">List available AI models</p>
-            </div>
-
-            <div className="border-l-4 border-purple-500 pl-4">
-              <code className="font-mono">GET /api/ai/analytics</code>
-              <p className="text-gray-600">Get performance metrics</p>
-            </div>
-
-            <div className="border-l-4 border-orange-500 pl-4">
-              <code className="font-mono">POST /api/ai/test</code>
-              <p className="text-gray-600">A/B testing for model comparison</p>
-            </div>
-          </div>
+      {/* Main content */}
+      <main className="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-900">
+        <div className="h-full max-w-7xl mx-auto">
+          <ChatInterface
+            conversationId="conv-demo"
+            currentUser={mockUser}
+            initialMessages={messages}
+            onMessageSend={handleMessageSend}
+            className="h-full shadow-lg"
+          />
         </div>
+      </main>
 
-        <div>
-          <h2 className="text-2xl font-bold mb-4">Documentation</h2>
-          <ul className="space-y-2">
-            <li>
-              <a href="/README.md" className="text-blue-600 hover:underline">
-                📖 Full Documentation
-              </a>
-            </li>
-            <li>
-              <a href="/API.md" className="text-blue-600 hover:underline">
-                🔌 API Reference
-              </a>
-            </li>
-          </ul>
+      {/* Footer */}
+      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+        <div className="max-w-7xl mx-auto text-center text-sm text-gray-600 dark:text-gray-400">
+          <p>
+            Built with Next.js, TypeScript, Tailwind CSS, and WebSocket for real-time
+            communication
+          </p>
         </div>
-      </div>
-    </main>
+      </footer>
+    </div>
   );
 }

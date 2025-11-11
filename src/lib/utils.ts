@@ -5,74 +5,119 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(date: string | Date): string {
-  const d = new Date(date);
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(d);
-}
-
-export function formatDateTime(date: string | Date): string {
-  const d = new Date(date);
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(d);
-}
-
-export function formatRelativeTime(date: string | Date): string {
-  const d = new Date(date);
+export function formatDate(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
   const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - d.getTime()) / 1000);
+  const diff = now.getTime() - d.getTime();
 
-  if (diffInSeconds < 60) {
-    return 'just now';
-  } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-  } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  } else if (diffInSeconds < 2592000) {
-    const days = Math.floor(diffInSeconds / 86400);
-    return `${days} day${days > 1 ? 's' : ''} ago`;
-  } else {
-    return formatDate(d);
-  }
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (seconds < 60) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+
+  return d.toLocaleDateString();
 }
 
-export function truncate(str: string, length: number): string {
-  if (str.length <= length) return str;
-  return str.slice(0, length) + '...';
+export function formatTime(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
-export function slugify(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/[\s_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+export function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes';
+
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 }
 
-export function validateEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout | null = null;
+
+  return function executedFunction(...args: Parameters<T>) {
+    const later = () => {
+      timeout = null;
+      func(...args);
+    };
+
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
 }
 
-export function validateUsername(username: string): boolean {
-  const usernameRegex = /^[a-z0-9_-]{3,30}$/;
-  return usernameRegex.test(username);
+export function throttle<T extends (...args: any[]) => any>(
+  func: T,
+  limit: number
+): (...args: Parameters<T>) => void {
+  let inThrottle: boolean;
+
+  return function executedFunction(...args: Parameters<T>) {
+    if (!inThrottle) {
+      func(...args);
+      inThrottle = true;
+      setTimeout(() => (inThrottle = false), limit);
+    }
+  };
+}
+
+export function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
 export function getInitials(name: string): string {
-  const parts = name.trim().split(' ');
-  if (parts.length === 1) {
-    return parts[0].substring(0, 2).toUpperCase();
-  }
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+}
+
+export function isImageFile(filename: string): boolean {
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+  return imageExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+}
+
+export function isCodeFile(filename: string): boolean {
+  const codeExtensions = ['.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.cpp', '.c', '.go', '.rs', '.php', '.rb', '.swift', '.kt'];
+  return codeExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+}
+
+export function getFileLanguage(filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase();
+  const languageMap: Record<string, string> = {
+    'js': 'javascript',
+    'ts': 'typescript',
+    'jsx': 'javascript',
+    'tsx': 'typescript',
+    'py': 'python',
+    'java': 'java',
+    'cpp': 'cpp',
+    'c': 'c',
+    'go': 'go',
+    'rs': 'rust',
+    'php': 'php',
+    'rb': 'ruby',
+    'swift': 'swift',
+    'kt': 'kotlin',
+    'json': 'json',
+    'html': 'html',
+    'css': 'css',
+    'md': 'markdown',
+  };
+
+  return languageMap[ext || ''] || 'text';
 }
