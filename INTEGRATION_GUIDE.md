@@ -1,529 +1,157 @@
-# Integration Guide for Other Agents
+# Nexus AI - Core Systems Integration Guide
 
-This guide explains how other AI agents can integrate with the Nexus AI authentication and user management system.
+This guide explains how the three core systems (Authentication, AI Models, and Chat) are integrated together.
 
-## Overview
+## Architecture Overview
 
-The authentication system is built with **Supabase Auth** and provides:
-- User authentication (multi-provider OAuth + email/password)
-- User profile management
-- Session management
-- Security features (2FA, audit logs)
-- GDPR compliance
-
-## Quick Start for Other Agents
-
-### 1. Get Current User
-
-**Server Component (Recommended)**
-
-```typescript
-import { createClient } from '@/lib/supabase/server';
-
-export default async function MyServerComponent() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    // User is not authenticated
-    redirect('/auth/signin');
-  }
-
-  // Use user.id, user.email, etc.
-  return <div>Welcome {user.email}</div>;
-}
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Client Application                       │
+│                                                              │
+│  ┌────────────┐   ┌────────────┐   ┌────────────┐         │
+│  │   User     │   │     AI     │   │    Chat    │         │
+│  │  Context   │───│  Context   │───│  Context   │         │
+│  └────────────┘   └────────────┘   └────────────┘         │
+│                                                              │
+│         ↓                 ↓                 ↓                │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           ↓
+         ┌─────────────────────────────────────────┐
+         │      Unified API Middleware              │
+         │  - Authentication Check                  │
+         │  - User Context Extraction               │
+         │  - Rate Limiting                         │
+         │  - Quota Enforcement                     │
+         └─────────────────────────────────────────┘
+                           │
+          ┌────────────────┼────────────────┐
+          ↓                ↓                 ↓
+   ┌──────────┐    ┌──────────┐     ┌──────────┐
+   │   Auth   │    │    AI    │     │   Chat   │
+   │  System  │    │  System  │     │  System  │
+   │(Supabase)│    │ (Router) │     │(WebSocket│
+   └──────────┘    └──────────┘     └──────────┘
 ```
 
-**Client Component**
+## Components Created
 
-```typescript
-'use client';
+### 1. Unified API Middleware
+- **Location**: `src/lib/integration/api-middleware.ts`
+- **Purpose**: Handles auth + rate limiting + quota enforcement
+- **Exports**: `withAuth()`, `createAuthenticatedHandler()`, `getUserContext()`, `trackUsage()`
 
-import { useAuth } from '@/hooks/useAuth';
+### 2. WebSocket Authentication
+- **Location**: `src/lib/integration/websocket-auth.ts`
+- **Purpose**: Secures WebSocket connections with Supabase tokens
+- **Exports**: `authenticateWebSocket()`, `handleWebSocketConnection()`, `broadcastToConversation()`
 
-export default function MyClientComponent() {
-  const { user, loading, signOut } = useAuth();
+### 3. React Context Providers
+- **UserContext**: `src/contexts/UserContext.tsx` - Auth & profile
+- **AIContext**: `src/contexts/AIContext.tsx` - Model selection & cost
+- **ChatContext**: `src/contexts/ChatContext.tsx` - Messages & real-time
+- **AppProvider**: `src/contexts/AppProvider.tsx` - Unified provider
 
-  if (loading) return <div>Loading...</div>;
-  if (!user) return <div>Please sign in</div>;
+### 4. Integrated Chat Interface
+- **Location**: `src/components/integrated/IntegratedChatInterface.tsx`
+- **Purpose**: Complete UI combining all three systems
+- **Features**: Auth display, model selection, cost tracking, streaming, quotas
 
+### 5. Integrated Chat API
+- **Location**: `src/app/api/integrated/chat/route.ts`
+- **Purpose**: Complete API endpoint with full integration
+- **Features**: Authenticated requests, AI routing, streaming, usage tracking
+
+## Quick Start
+
+### 1. Wrap your app with providers
+
+```tsx
+// src/app/layout.tsx
+import { AppProvider } from '@/contexts/AppProvider';
+
+export default function RootLayout({ children }) {
   return (
-    <div>
-      <p>Welcome {user.email}</p>
-      <button onClick={signOut}>Sign Out</button>
-    </div>
+    <html>
+      <body>
+        <AppProvider>
+          {children}
+        </AppProvider>
+      </body>
+    </html>
   );
 }
 ```
 
-### 2. Get User Profile
+### 2. Use the integrated chat interface
 
-```typescript
-import { createClient } from '@/lib/supabase/server';
+```tsx
+// src/app/chat/page.tsx
+import { IntegratedChatInterface } from '@/components/integrated/IntegratedChatInterface';
 
-export default async function MyComponent() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return null;
-
-  // Get full profile
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  return (
-    <div>
-      <h1>{profile.display_name || profile.username}</h1>
-      <p>{profile.bio}</p>
-      <p>Role: {profile.user_role}</p>
-    </div>
-  );
+export default function ChatPage() {
+  return <IntegratedChatInterface />;
 }
 ```
 
-**Using Hook (Client Component)**
+### 3. Or build custom components
 
-```typescript
+```tsx
 'use client';
+import { useUser, useAI, useChat } from '@/contexts/AppProvider';
 
-import { useProfile } from '@/hooks/useProfile';
-
-export default function MyComponent() {
-  const { profile, loading, updateProfile } = useProfile();
-
-  if (loading) return <div>Loading...</div>;
+export function MyCustomChat() {
+  const { user, subscription, quotas } = useUser();
+  const { selectedModel, sessionCost } = useAI();
+  const { messages, sendMessage, isStreaming } = useChat();
 
   return (
     <div>
-      <h1>{profile?.display_name}</h1>
-      <button onClick={() => updateProfile({ bio: 'New bio' })}>
-        Update Bio
+      <div>User: {user?.email}</div>
+      <div>Tier: {subscription?.tier}</div>
+      <div>Quota: {quotas?.remaining}/{quotas?.api_quota_limit}</div>
+      <div>Model: {selectedModel || 'Smart Router'}</div>
+      <div>Cost: ${sessionCost.toFixed(4)}</div>
+      
+      {messages.map(msg => (
+        <div key={msg.id}>{msg.content}</div>
+      ))}
+      
+      <button
+        onClick={() => sendMessage('Hello!')}
+        disabled={isStreaming}
+      >
+        Send
       </button>
     </div>
   );
 }
 ```
 
-### 3. Protect Routes
+## Rate Limits by Tier
 
-**Middleware (Already Configured)**
+| Tier       | Requests/Min | Monthly Quota |
+|------------|-------------|---------------|
+| Free       | 20          | 100           |
+| Pro        | 100         | 10,000        |
+| Team       | 500         | 100,000       |
+| Enterprise | 10,000      | Unlimited     |
 
-The `src/middleware.ts` automatically protects routes:
-- `/dashboard/*` requires authentication
-- Redirects to `/auth/signin` if not authenticated
-- Redirects authenticated users away from auth pages
+## Testing
 
-**Server Action Protection**
+See the integration tests and examples in the full guide above.
 
-```typescript
-import { createClient } from '@/lib/supabase/server';
+## Next Steps
 
-export async function myServerAction() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error('Unauthorized');
-  }
-
-  // Your protected logic here
-}
-```
-
-### 4. Check User Permissions
-
-```typescript
-import { createClient } from '@/lib/supabase/server';
-
-export async function checkPermission(requiredTier: string) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return false;
-
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('subscription_tier')
-    .eq('id', user.id)
-    .single();
-
-  return profile?.subscription_tier === requiredTier;
-}
-
-// Usage
-export default async function PremiumFeature() {
-  const hasAccess = await checkPermission('pro');
-
-  if (!hasAccess) {
-    return <div>Upgrade to Pro to access this feature</div>;
-  }
-
-  return <div>Premium content</div>;
-}
-```
-
-### 5. Log User Activity
-
-```typescript
-import { createClient } from '@/lib/supabase/server';
-
-export async function logActivity(
-  action: string,
-  resourceType?: string,
-  resourceId?: string,
-  metadata?: any
-) {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return;
-
-  await supabase
-    .from('user_activity_log')
-    .insert({
-      user_id: user.id,
-      action,
-      resource_type: resourceType,
-      resource_id: resourceId,
-      metadata,
-    });
-}
-
-// Usage
-await logActivity('created_project', 'project', projectId, {
-  name: 'My Project',
-  type: 'web',
-});
-```
-
-### 6. Check API Quota
-
-```typescript
-import { createClient } from '@/lib/supabase/server';
-
-export async function checkQuota() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return { allowed: false, remaining: 0 };
-
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('monthly_requests, api_quota_limit')
-    .eq('id', user.id)
-    .single();
-
-  const remaining = profile.api_quota_limit - profile.monthly_requests;
-  const allowed = remaining > 0;
-
-  return { allowed, remaining, used: profile.monthly_requests };
-}
-
-// Usage
-export async function myAPIEndpoint() {
-  const { allowed, remaining } = await checkQuota();
-
-  if (!allowed) {
-    return { error: 'Quota exceeded', remaining: 0 };
-  }
-
-  // Process request and increment counter
-  await incrementQuota();
-
-  return { success: true, remaining: remaining - 1 };
-}
-
-async function incrementQuota() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  await supabase.rpc('increment_monthly_requests', {
-    user_id: user.id,
-  });
-}
-```
-
-### 7. Send Notifications
-
-```typescript
-import { createClient } from '@/lib/supabase/server';
-
-export async function sendNotification(
-  userId: string,
-  type: 'email' | 'push' | 'slack' | 'discord',
-  subject: string,
-  content: string,
-  metadata?: any
-) {
-  const supabase = await createClient();
-
-  // Check if user has this notification type enabled
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select(`${type}_notifications`)
-    .eq('id', userId)
-    .single();
-
-  const notificationKey = `${type}_notifications`;
-  if (!profile[notificationKey]) {
-    return; // User has disabled this notification type
-  }
-
-  // Queue notification
-  await supabase
-    .from('notification_queue')
-    .insert({
-      user_id: userId,
-      type,
-      subject,
-      content,
-      metadata,
-      status: 'pending',
-    });
-}
-
-// Usage
-await sendNotification(
-  user.id,
-  'email',
-  'New message',
-  'You have a new message from John',
-  { messageId: '123' }
-);
-```
-
-### 8. Get User Preferences
-
-```typescript
-import { createClient } from '@/lib/supabase/server';
-
-export async function getUserPreferences() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return null;
-
-  const { data: preferences } = await supabase
-    .from('user_preferences')
-    .select('*')
-    .eq('user_id', user.id)
-    .single();
-
-  return preferences;
-}
-
-// Usage
-const prefs = await getUserPreferences();
-const theme = prefs?.theme || 'system';
-const defaultModel = prefs?.default_model || 'gpt-4';
-```
-
-## API Routes Available
-
-### Authentication
-- `POST /api/auth/2fa/setup` - Setup 2FA
-- `POST /api/auth/2fa/verify` - Verify 2FA token
-- `POST /api/auth/2fa/disable` - Disable 2FA
-
-### Profile
-- `GET /api/profile` - Get current user's profile
-- `PATCH /api/profile` - Update profile
-- `GET /api/profile/preferences` - Get preferences
-- `PATCH /api/profile/preferences` - Update preferences
-
-### User Management
-- `GET /api/user/export` - Export user data (GDPR)
-- `POST /api/user/delete` - Delete account
-
-## Database Tables
-
-### user_profiles
-Main user profile table with all user information.
-
-**Key Fields:**
-- `id` (UUID) - User ID (references auth.users)
-- `username` (string) - Unique username
-- `display_name` (string) - Display name
-- `bio` (text) - User bio
-- `avatar_url` (string) - Avatar URL
-- `user_role` (enum) - User role
-- `subscription_tier` (enum) - Subscription tier
-- `two_factor_enabled` (boolean) - 2FA status
-- `onboarding_completed` (boolean) - Onboarding status
-
-### security_logs
-Track all security-related events.
-
-**Fields:**
-- `user_id` (UUID)
-- `event_type` (string) - Event type
-- `event_status` (string) - Status
-- `ip_address` (inet) - IP address
-- `user_agent` (text) - User agent
-- `metadata` (jsonb) - Additional data
-
-### user_sessions
-Track active user sessions.
-
-**Fields:**
-- `user_id` (UUID)
-- `device_name` (string)
-- `device_type` (string)
-- `is_active` (boolean)
-- `last_activity_at` (timestamp)
-
-## Security Considerations
-
-1. **Always use server-side validation**: Never trust client-side data
-2. **Check permissions**: Verify user has access to resources
-3. **Log sensitive actions**: Use security_logs table
-4. **Respect user preferences**: Check notification settings
-5. **Rate limiting**: Implement rate limiting for API endpoints
-6. **Input validation**: Always validate and sanitize user input
-
-## Row Level Security (RLS)
-
-All tables have RLS policies enabled. Users can only:
-- View their own data
-- Update their own profile
-- View public profiles (if profile_visibility = 'public')
-
-**Example Query (automatically filtered by RLS):**
-
-```typescript
-// This only returns the current user's profile
-const { data } = await supabase
-  .from('user_profiles')
-  .select('*')
-  .single();
-```
-
-## Hooks Available
-
-### useAuth()
-Returns: `{ user, session, loading, signOut }`
-
-### useProfile()
-Returns: `{ profile, loading, error, updateProfile }`
-
-## Common Patterns
-
-### 1. Protected Server Component
-
-```typescript
-import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
-
-export default async function ProtectedPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect('/auth/signin');
-
-  // Component code
-}
-```
-
-### 2. Protected API Route
-
-```typescript
-import { createClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
-
-export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  // API logic
-}
-```
-
-### 3. User-Specific Data Query
-
-```typescript
-const { data } = await supabase
-  .from('your_table')
-  .select('*')
-  .eq('user_id', user.id); // Filter by current user
-```
-
-## Testing Authentication
-
-### Manual Testing
-
-1. Sign up: `http://localhost:3000/auth/signup`
-2. Sign in: `http://localhost:3000/auth/signin`
-3. Dashboard: `http://localhost:3000/dashboard`
-4. Onboarding: `http://localhost:3000/onboarding`
-
-### Test OAuth Locally
-
-1. Use Supabase CLI: `npx supabase start`
-2. Configure OAuth providers in Supabase Dashboard
-3. Use local URLs for testing
-
-## Troubleshooting
-
-### "Unauthorized" Errors
-
-- Check if user is authenticated: `await supabase.auth.getUser()`
-- Verify session is valid
-- Check middleware configuration
-
-### RLS Policy Issues
-
-- Ensure RLS policies are enabled
-- Verify user has permission to access data
-- Check table ownership
-
-### OAuth Not Working
-
-- Verify OAuth credentials in Supabase Dashboard
-- Check redirect URLs are configured correctly
-- Ensure provider is enabled in Supabase
+1. Add SQL migration for `increment_user_requests()` function
+2. Implement Redis-based rate limiting
+3. Add comprehensive integration tests
+4. Deploy WebSocket server
+5. Configure production environment variables
 
 ## Support
 
-For integration questions:
-1. Check this guide first
-2. Review the main README.md
-3. Inspect the code examples in `/src/app`
-4. Create an issue on GitHub
-
----
-
-**Pro Tip:** Always test authentication flows in incognito/private browsing mode to ensure session handling works correctly.
+For detailed documentation, see the individual system reports:
+- Authentication: Check Agent 1 report
+- AI Models: Check Agent 2 report
+- Chat/Real-time: Check Agent 3 report

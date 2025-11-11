@@ -1,0 +1,529 @@
+// Nexus AI - Team Collaboration Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USER & AUTH ====================
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  avatar        String?
+  passwordHash  String?
+
+  // OAuth
+  oauthProvider String?
+  oauthId       String?
+
+  // Profile
+  bio           String?
+  timezone      String   @default("UTC")
+  language      String   @default("en")
+
+  // Status
+  emailVerified Boolean  @default(false)
+  active        Boolean  @default(true)
+
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastSeenAt    DateTime @default(now())
+
+  // Relations
+  ownedWorkspaces      TeamWorkspace[]      @relation("WorkspaceOwner")
+  memberships          TeamMember[]
+  sentInvitations      WorkspaceInvitation[] @relation("InvitationSender")
+  receivedInvitations  WorkspaceInvitation[] @relation("InvitationReceiver")
+  activities           ActivityFeed[]
+  notifications        Notification[]
+
+  @@index([email])
+  @@index([oauthProvider, oauthId])
+}
+
+// ==================== TEAM WORKSPACE ====================
+
+model TeamWorkspace {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  slug        String   @unique
+  avatar      String?
+  banner      String?
+
+  // Configuration
+  plan        String   @default("team") // team, enterprise
+
+  // Settings (JSON fields)
+  settings    Json     @default("{}")
+  branding    Json     @default("{}")
+  realTimeSettings Json @default("{}")
+  notificationSettings Json @default("{}")
+  securitySettings Json @default("{}")
+
+  // Billing
+  billing     Json     @default("{}")
+  quotas      Json     @default("{}")
+
+  // Owner
+  ownerId     String
+  owner       User     @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastActivityAt DateTime @default(now())
+
+  // Relations
+  members     TeamMember[]
+  invitations WorkspaceInvitation[]
+  roles       TeamRole[]
+  channels    Channel[]
+  projects    Project[]
+  resources   SharedResource[]
+  activities  ActivityFeed[]
+  insights    WorkspaceInsight[]
+
+  @@index([slug])
+  @@index([ownerId])
+}
+
+// ==================== TEAM MEMBERS ====================
+
+model TeamMember {
+  id          String   @id @default(cuid())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workspaceId String
+  workspace   TeamWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  roleId      String
+  role        TeamRole @relation(fields: [roleId], references: [id])
+
+  // Status
+  status      String   @default("active") // active, inactive, suspended
+
+  // Preferences (JSON)
+  preferences Json     @default("{}")
+  notificationSettings Json @default("{}")
+  availability Json    @default("{}")
+
+  // Timestamps
+  joinedAt    DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+// ==================== ROLES & PERMISSIONS ====================
+
+model TeamRole {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  level       Int      @default(50) // 0-100, higher = more privileges
+
+  // Permissions (JSON array)
+  permissions Json     @default("[]")
+
+  // Type
+  isCustom    Boolean  @default(true)
+  isSystemRole Boolean @default(false)
+
+  workspaceId String
+  workspace   TeamWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  members     TeamMember[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+}
+
+// ==================== INVITATIONS ====================
+
+model WorkspaceInvitation {
+  id          String   @id @default(cuid())
+
+  workspaceId String
+  workspace   TeamWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  email       String
+
+  roleId      String
+
+  invitedById String
+  invitedBy   User     @relation("InvitationSender", fields: [invitedById], references: [id])
+
+  receiverId  String?
+  receiver    User?    @relation("InvitationReceiver", fields: [receiverId], references: [id])
+
+  // Invitation details
+  token       String   @unique
+  status      String   @default("pending") // pending, accepted, declined, expired, cancelled
+  message     String?
+
+  // Timestamps
+  invitedAt   DateTime @default(now())
+  expiresAt   DateTime
+  respondedAt DateTime?
+
+  @@index([workspaceId])
+  @@index([email])
+  @@index([token])
+  @@index([status])
+}
+
+// ==================== CHANNELS ====================
+
+model Channel {
+  id          String   @id @default(cuid())
+
+  workspaceId String
+  workspace   TeamWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  type        String   @default("public") // public, private, direct
+  icon        String?
+
+  // Organization
+  parentId    String?
+  parent      Channel? @relation("ChannelHierarchy", fields: [parentId], references: [id])
+  children    Channel[] @relation("ChannelHierarchy")
+  position    Int      @default(0)
+
+  // Members (JSON array of user IDs)
+  members     Json     @default("[]")
+
+  // Status
+  archived    Boolean  @default(false)
+  muted       Json     @default("[]") // Array of user IDs
+
+  // Creator
+  createdBy   String
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastActivityAt DateTime @default(now())
+
+  // Relations
+  messages    Message[]
+
+  @@index([workspaceId])
+  @@index([type])
+  @@index([parentId])
+}
+
+model Message {
+  id          String   @id @default(cuid())
+
+  channelId   String
+  channel     Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  userId      String
+  content     String
+
+  // Message details
+  type        String   @default("text") // text, file, system
+  metadata    Json     @default("{}")
+
+  // Thread
+  parentId    String?
+  parent      Message? @relation("MessageThread", fields: [parentId], references: [id])
+  replies     Message[] @relation("MessageThread")
+
+  // Status
+  edited      Boolean  @default(false)
+  deleted     Boolean  @default(false)
+
+  // Reactions (JSON)
+  reactions   Json     @default("[]")
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([channelId])
+  @@index([userId])
+  @@index([parentId])
+}
+
+// ==================== PROJECTS ====================
+
+model Project {
+  id          String   @id @default(cuid())
+
+  workspaceId String
+  workspace   TeamWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  icon        String?
+  color       String?
+
+  // Organization
+  status      String   @default("active") // active, archived, completed
+  visibility  String   @default("team") // private, team, public
+
+  // Members (JSON array of user IDs)
+  members     Json     @default("[]")
+
+  // Settings
+  settings    Json     @default("{}")
+
+  // Creator
+  createdBy   String
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastActivityAt DateTime @default(now())
+
+  // Relations
+  conversations Conversation[]
+
+  @@index([workspaceId])
+  @@index([status])
+}
+
+model Conversation {
+  id          String   @id @default(cuid())
+
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  title       String?
+  type        String   @default("chat") // chat, document, code
+
+  // Content (JSON)
+  content     Json     @default("[]")
+  metadata    Json     @default("{}")
+
+  // Creator
+  createdBy   String
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastActivityAt DateTime @default(now())
+
+  // Relations
+  artifacts   Artifact[]
+  collaborationSessions CollaborationSession[]
+
+  @@index([projectId])
+  @@index([createdBy])
+}
+
+model Artifact {
+  id            String   @id @default(cuid())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  title         String
+  type          String   // code, document, design, data
+  language      String?
+
+  // Content
+  content       String   @db.Text
+  metadata      Json     @default("{}")
+
+  // Version
+  version       Int      @default(1)
+
+  // Creator
+  createdBy     String
+
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([conversationId])
+  @@index([type])
+}
+
+// ==================== SHARED RESOURCES ====================
+
+model SharedResource {
+  id          String   @id @default(cuid())
+
+  workspaceId String
+  workspace   TeamWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  type        String   // conversation, artifact, file, document
+  resourceId  String
+  name        String
+  description String?
+
+  // Access Control
+  visibility  String   @default("private") // private, team, public
+  sharedWith  Json     @default("[]") // Array of access objects
+
+  // Owner
+  ownerId     String
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastAccessedAt DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([type])
+  @@index([resourceId])
+}
+
+// ==================== REAL-TIME COLLABORATION ====================
+
+model CollaborationSession {
+  id          String   @id @default(cuid())
+
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  resourceType String  // conversation, artifact, document
+  resourceId   String
+
+  workspaceId  String
+
+  // Participants (JSON array)
+  participants Json    @default("[]")
+
+  // State (JSON)
+  state        Json    @default("{}")
+
+  // Operations (stored separately for performance)
+  // operations stored in CollaborationOperation table
+
+  // Timestamps
+  createdAt    DateTime @default(now())
+  lastActivity DateTime @default(now())
+
+  // Relations
+  operations   CollaborationOperation[]
+
+  @@index([resourceId])
+  @@index([workspaceId])
+}
+
+model CollaborationOperation {
+  id          String   @id @default(cuid())
+
+  sessionId   String
+  session     CollaborationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  userId      String
+  type        String   // text_insert, text_delete, text_format, etc.
+
+  // Operation data (JSON)
+  data        Json
+
+  // Timestamp
+  timestamp   DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([timestamp])
+}
+
+// ==================== NOTIFICATIONS ====================
+
+model Notification {
+  id          String   @id @default(cuid())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        String
+  title       String
+  message     String
+
+  // Data (JSON)
+  data        Json     @default("{}")
+
+  // Status
+  read        Boolean  @default(false)
+  archived    Boolean  @default(false)
+
+  // Priority
+  priority    String   @default("medium") // low, medium, high, urgent
+
+  // Workspace context
+  workspaceId String?
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  readAt      DateTime?
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+// ==================== ACTIVITY FEED ====================
+
+model ActivityFeed {
+  id          String   @id @default(cuid())
+
+  workspaceId String
+  workspace   TeamWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        String   // member, project, conversation, artifact, etc.
+  action      String   // created, updated, deleted, joined, etc.
+
+  resource    String   // Resource type
+  resourceId  String   // Resource ID
+
+  // Metadata (JSON)
+  metadata    Json     @default("{}")
+
+  // Timestamp
+  timestamp   DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([type])
+  @@index([timestamp])
+}
+
+// ==================== WORKSPACE INSIGHTS ====================
+
+model WorkspaceInsight {
+  id          String   @id @default(cuid())
+
+  workspaceId String
+  workspace   TeamWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  type        String   // activity, collaboration, engagement, performance
+  metric      String
+  value       Float
+  trend       String   // up, down, stable
+  period      String   // day, week, month, year
+
+  // Timestamp
+  timestamp   DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([type])
+  @@index([timestamp])
+}
