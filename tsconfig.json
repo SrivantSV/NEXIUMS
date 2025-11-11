@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+<<<<<<< HEAD
     "target": "ES2020",
 <<<<<<< HEAD
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
@@ -24,6 +25,8 @@
       "@/app/*": ["./src/app/*"]
     },
 =======
+=======
+>>>>>>> origin/claude/projects-memory-system-011CUzv97cw1JEpNf3XL2KhQ
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -36,19 +39,28 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+<<<<<<< HEAD
 >>>>>>> origin/claude/mcp-integration-framework-011CUzv5zqoN6kUzRrxTq7Br
+=======
+>>>>>>> origin/claude/projects-memory-system-011CUzv97cw1JEpNf3XL2KhQ
     "plugins": [
       {
         "name": "next"
       }
 <<<<<<< HEAD
+<<<<<<< HEAD
     ]
 =======
+=======
+>>>>>>> origin/claude/projects-memory-system-011CUzv97cw1JEpNf3XL2KhQ
     ],
     "paths": {
       "@/*": ["./src/*"]
     }
+<<<<<<< HEAD
 >>>>>>> origin/claude/mcp-integration-framework-011CUzv5zqoN6kUzRrxTq7Br
+=======
+>>>>>>> origin/claude/projects-memory-system-011CUzv97cw1JEpNf3XL2KhQ
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
