@@ -1,22 +1,64 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+=======
+import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import { nanoid } from 'nanoid';
+>>>>>>> origin/claude/team-collaboration-features-011CUzvDdFG4Rac9K58kihU4
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+<<<<<<< HEAD
 export function formatDate(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   const now = new Date();
   const diff = now.getTime() - d.getTime();
 
+=======
+export function generateId(prefix?: string): string {
+  const id = nanoid();
+  return prefix ? `${prefix}_${id}` : id;
+}
+
+export function generateToken(): string {
+  return nanoid(32);
+}
+
+export function slugify(text: string): string {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^\w\-]+/g, '')
+    .replace(/\-\-+/g, '-')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '');
+}
+
+export function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(date);
+}
+
+export function formatRelativeTime(date: Date): string {
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+>>>>>>> origin/claude/team-collaboration-features-011CUzvDdFG4Rac9K58kihU4
   const seconds = Math.floor(diff / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
 
+<<<<<<< HEAD
   if (seconds < 60) return 'just now';
   if (minutes < 60) return `${minutes}m ago`;
   if (hours < 24) return `${hours}h ago`;
@@ -41,12 +83,24 @@ export function formatFileSize(bytes: number): string {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
   return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+=======
+  if (days > 0) return `${days}d ago`;
+  if (hours > 0) return `${hours}h ago`;
+  if (minutes > 0) return `${minutes}m ago`;
+  return 'just now';
+}
+
+export function truncate(text: string, length: number): string {
+  if (text.length <= length) return text;
+  return text.slice(0, length) + '...';
+>>>>>>> origin/claude/team-collaboration-features-011CUzvDdFG4Rac9K58kihU4
 }
 
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
+<<<<<<< HEAD
   let timeout: NodeJS.Timeout | null = null;
 
   return function executedFunction(...args: Parameters<T>) {
@@ -56,6 +110,17 @@ export function debounce<T extends (...args: any[]) => any>(
     };
 
     if (timeout) clearTimeout(timeout);
+=======
+  let timeout: NodeJS.Timeout;
+
+  return function executedFunction(...args: Parameters<T>) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+
+    clearTimeout(timeout);
+>>>>>>> origin/claude/team-collaboration-features-011CUzvDdFG4Rac9K58kihU4
     timeout = setTimeout(later, wait);
   };
 }
@@ -74,6 +139,7 @@ export function throttle<T extends (...args: any[]) => any>(
     }
   };
 }
+<<<<<<< HEAD
 
 export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -191,3 +257,5 @@ export function generateId(): string {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 >>>>>>> origin/claude/projects-memory-system-011CUzv97cw1JEpNf3XL2KhQ
 }
+=======
+>>>>>>> origin/claude/team-collaboration-features-011CUzvDdFG4Rac9K58kihU4
