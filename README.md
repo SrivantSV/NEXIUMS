@@ -1,259 +1,358 @@
-# NEXIUMS - AI-Powered Artifacts & Code Execution Platform
+# Nexus AI - MCP Integration Framework
 
-A comprehensive platform for creating, executing, and sharing code artifacts with AI assistance.
+A comprehensive Model Context Protocol (MCP) integration framework that connects to 50+ external services, enabling seamless AI-powered workflows across productivity tools, communication platforms, development services, and more.
 
-## Features
+## 🚀 Features
 
-- **Multi-Language Support**: Execute JavaScript, TypeScript, Python, HTML, React, Vue, Svelte, and more
-- **Secure Execution**: Docker-based sandboxed environment with resource limits
-- **Live Preview**: Real-time preview for web-based artifacts
-- **Version Control**: Complete version history with diff viewing and rollback
-- **Collaboration**: Real-time collaborative editing
-- **AI Integration**: AI-powered code generation and assistance
-- **Template Library**: Pre-built templates for common use cases
-- **Sharing & Embedding**: Share artifacts via links or embed them
+### Core Capabilities
 
-## Architecture
+- **50+ Integrations**: Connect to major services including:
+  - **Productivity**: Notion, Linear, Jira, Asana, Trello, Airtable, ClickUp
+  - **Communication**: Slack, Discord, Microsoft Teams, Gmail
+  - **Development**: GitHub, GitLab, Vercel, Netlify, Docker, AWS
+  - **Design**: Figma, Canva
+  - **Storage**: Google Drive, Dropbox, OneDrive
+  - **Business**: Salesforce, HubSpot, Stripe
+  - And many more!
 
-```
-NEXIUMS/
-├── frontend/      # Next.js 14 + React + TypeScript
-├── backend/       # Express + Prisma + PostgreSQL
-├── executor/      # Code execution service
-├── shared/        # Shared types and utilities
-└── docker/        # Docker configurations
-```
+- **Intelligent Orchestration**:
+  - Natural language intent classification
+  - Automatic tool selection
+  - Multi-step workflow execution
+  - Context-aware parameter extraction
 
-## Tech Stack
+- **Enterprise-Ready**:
+  - OAuth 2.0 authentication
+  - Encrypted credential storage
+  - Rate limiting and quota management
+  - Webhook support
+  - Usage analytics
 
-### Frontend
-- Next.js 14 (App Router)
-- React 18
-- TypeScript
-- Tailwind CSS
-- Monaco Editor
-- Shadcn UI
-
-### Backend
-- Node.js 20
-- Express
-- Prisma ORM
-- PostgreSQL
-- Redis
-- JWT Authentication
-
-### Executor
-- Docker
-- VM2 (JavaScript sandboxing)
-- Python subprocess
-- Resource limiting
-
-## Quick Start
-
-### Prerequisites
-- Node.js 20+
-- Docker & Docker Compose
-- PostgreSQL 15+
-- Redis 7+
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/SrivantSV/NEXIUMS.git
-cd NEXIUMS
-```
-
-2. Install dependencies:
-```bash
-# Install all dependencies
-npm run install:all
-
-# Or install individually
-cd frontend && npm install
-cd ../backend && npm install
-cd ../executor && npm install
-```
-
-3. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-4. Start the database:
-```bash
-docker-compose up -d postgres redis
-```
-
-5. Run migrations:
-```bash
-cd backend
-npx prisma migrate dev
-```
-
-6. Start the development servers:
-```bash
-# Terminal 1: Backend
-cd backend && npm run dev
-
-# Terminal 2: Frontend
-cd frontend && npm run dev
-
-# Terminal 3: Executor
-cd executor && npm run dev
-```
-
-### Using Docker Compose
-
-```bash
-docker-compose up
-```
-
-Access the application at http://localhost:3000
-
-## API Documentation
-
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/me` - Get current user
-
-### Artifacts
-- `POST /api/artifacts` - Create artifact
-- `GET /api/artifacts` - List artifacts
-- `GET /api/artifacts/:id` - Get artifact
-- `PUT /api/artifacts/:id` - Update artifact
-- `DELETE /api/artifacts/:id` - Delete artifact
-- `POST /api/artifacts/:id/execute` - Execute artifact
-- `GET /api/artifacts/:id/versions` - Get version history
-- `POST /api/artifacts/:id/share` - Create share link
-
-## Supported Artifact Types
-
-### Code Artifacts
-- React Component
-- Vue Component
-- Svelte Component
-- Angular Component
-- HTML Page
-- JavaScript/TypeScript
-- Python Script
-- Node.js Script
-- Shell Script
-- SQL Query
-
-### Document Artifacts
-- Markdown Document
-- LaTeX Document
-- JSON Schema
-- API Specification
-
-### Data Artifacts
-- Data Table
-- Chart/Visualization
-- Dashboard
-- CSV Data
-
-### Design Artifacts
-- SVG Graphics
-- Mermaid Diagrams
-- Flowcharts
-- Wireframes
-
-## Security
-
-- Docker-based sandboxing
-- Resource limits (CPU, memory, time)
-- Network isolation
-- Read-only file systems
-- Module whitelisting
-- Input validation
-- JWT authentication
-- CORS protection
-
-## Development
-
-### Project Structure
+## 📦 Project Structure
 
 ```
-frontend/src/
-├── app/              # Next.js pages
-├── components/       # React components
-│   ├── artifacts/   # Artifact UI
-│   ├── editor/      # Code editor
-│   └── ui/          # Reusable UI
-├── lib/             # Utilities
-├── hooks/           # Custom hooks
-└── types/           # TypeScript types
-
-backend/src/
-├── controllers/     # Request handlers
-├── models/          # Prisma models
-├── routes/          # API routes
-├── services/        # Business logic
-├── middleware/      # Express middleware
-└── types/           # TypeScript types
-
-executor/src/
-├── sandbox/         # Sandboxing logic
-├── runners/         # Language runners
-├── queue/           # Job queue
-└── docker/          # Docker management
+nexus-ai/
+├── src/
+│   ├── types/
+│   │   └── mcp.ts                    # Core MCP type definitions
+│   ├── lib/
+│   │   ├── mcp/
+│   │   │   ├── orchestrator.ts       # Main orchestration engine
+│   │   │   ├── intent-classifier.ts  # NLP-based intent classification
+│   │   │   ├── workflow-engine.ts    # Multi-step workflow management
+│   │   │   ├── connection-manager.ts # Connection lifecycle management
+│   │   │   ├── server-registry.ts    # Available servers registry
+│   │   │   ├── base-server.ts        # Base server implementation
+│   │   │   └── servers/             # Individual server implementations
+│   │   │       ├── github.ts
+│   │   │       ├── slack.ts
+│   │   │       ├── notion.ts
+│   │   │       ├── linear.ts
+│   │   │       └── google-drive.ts
+│   │   └── auth/
+│   │       ├── oauth.ts              # OAuth flow management
+│   │       └── encryption.ts         # Credential encryption
+│   ├── components/
+│   │   ├── mcp/
+│   │   │   └── MCPManager.tsx       # Main UI component
+│   │   └── ui/                      # Shared UI components
+│   └── app/
+│       ├── api/
+│       │   ├── mcp/
+│       │   │   ├── connections/     # Connection CRUD
+│       │   │   ├── execute/         # Execute MCP operations
+│       │   │   └── servers/         # Available servers
+│       │   └── auth/
+│       │       ├── oauth/           # OAuth initiation
+│       │       └── callback/        # OAuth callback
+│       ├── integrations/            # MCP Manager page
+│       └── page.tsx                 # Home page
 ```
 
-### Testing
+## 🛠️ Installation
 
-```bash
-# Run all tests
-npm test
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/yourusername/nexus-ai.git
+   cd nexus-ai
+   ```
 
-# Run frontend tests
-cd frontend && npm test
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-# Run backend tests
-cd backend && npm test
+3. **Set up environment variables**:
+   ```bash
+   cp .env.example .env
+   ```
 
-# Run executor tests
-cd executor && npm test
-```
+   Edit `.env` and add your API credentials for the services you want to use.
 
-### Building for Production
+4. **Generate encryption key**:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+   ```
+   Add the output to `ENCRYPTION_KEY` in `.env`.
 
-```bash
-# Build all services
-npm run build:all
+5. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
 
-# Or build individually
-cd frontend && npm run build
-cd backend && npm run build
-cd executor && npm run build
-```
+6. **Open your browser**:
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
-## Deployment
-
-### Using Docker
-
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-```
+## 🔧 Configuration
 
 ### Environment Variables
 
-See `.env.example` for all required environment variables.
+Required variables in `.env`:
 
-## Contributing
+```env
+# Application
+APP_URL=http://localhost:3000
+NODE_ENV=development
+
+# Security
+JWT_SECRET=your-jwt-secret
+ENCRYPTION_KEY=your-encryption-key-base64
+
+# GitHub
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+
+# Slack
+SLACK_CLIENT_ID=your-slack-client-id
+SLACK_CLIENT_SECRET=your-slack-client-secret
+
+# Notion
+NOTION_CLIENT_ID=your-notion-client-id
+NOTION_CLIENT_SECRET=your-notion-client-secret
+
+# Linear
+LINEAR_CLIENT_ID=your-linear-client-id
+LINEAR_CLIENT_SECRET=your-linear-client-secret
+
+# Google
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+```
+
+### OAuth Setup
+
+For each service you want to integrate:
+
+1. **Register your application** with the service provider
+2. **Set redirect URI** to `{APP_URL}/api/auth/callback/{service-id}`
+3. **Add credentials** to `.env`
+4. **Configure scopes** in `src/lib/mcp/server-registry.ts`
+
+## 📚 Usage
+
+### Connecting Services
+
+1. Navigate to `/integrations`
+2. Browse available integrations
+3. Click "Connect" on desired service
+4. Complete OAuth flow
+5. Service is now connected!
+
+### Using MCP in Code
+
+```typescript
+import { MCPOrchestrator } from '@/lib/mcp/orchestrator';
+
+const orchestrator = new MCPOrchestrator();
+
+// Execute a natural language request
+const result = await orchestrator.processUserRequest(
+  "Search for recent commits in my repository",
+  userId,
+  context
+);
+
+console.log(result);
+// {
+//   success: true,
+//   data: [...commits],
+//   summary: "Found 10 recent commits"
+// }
+```
+
+### Creating Custom Workflows
+
+```typescript
+import { WorkflowEngine } from '@/lib/mcp/workflow-engine';
+
+const engine = new WorkflowEngine();
+
+// Add custom workflow template
+engine.addTemplate({
+  id: 'deploy-and-notify',
+  name: 'Deploy and Notify Team',
+  intent: 'deploy-and-notify',
+  steps: [
+    {
+      id: 'deploy',
+      serverId: 'vercel',
+      action: 'deploy',
+      parameters: { project: 'my-app' },
+      required: true,
+    },
+    {
+      id: 'notify',
+      serverId: 'slack',
+      action: 'send-message',
+      parameters: { channel: '#deploys' },
+      required: false,
+      dependsOn: ['deploy'],
+    },
+  ],
+});
+```
+
+### Adding New MCP Servers
+
+1. **Create server implementation**:
+
+```typescript
+// src/lib/mcp/servers/myservice.ts
+import { BaseMCPServer } from '../base-server';
+
+export class MyServiceMCPServer extends BaseMCPServer {
+  async validateConnection(): Promise<boolean> {
+    // Implement validation
+  }
+
+  async myCustomAction(params: any): Promise<any> {
+    return this.executeOperation('myCustomAction', async () => {
+      // Implement action
+    });
+  }
+}
+```
+
+2. **Register in server registry**:
+
+```typescript
+// src/lib/mcp/server-registry.ts
+{
+  id: 'myservice',
+  name: 'My Service',
+  description: 'Integration with My Service',
+  category: 'productivity',
+  icon: '/icons/myservice.svg',
+  color: '#FF0000',
+  authType: 'oauth',
+  capabilities: [...],
+}
+```
+
+3. **Add to connection manager**:
+
+```typescript
+// src/lib/mcp/connection-manager.ts
+case 'myservice':
+  return (await import('./servers/myservice')).MyServiceMCPServer;
+```
+
+## 🔐 Security
+
+- **Encrypted Credentials**: All sensitive data is encrypted at rest using AES-256-GCM
+- **OAuth 2.0**: Secure authorization flows for all supported services
+- **State Verification**: CSRF protection on OAuth flows
+- **Rate Limiting**: Built-in rate limiting per service
+- **No Credential Exposure**: API routes never return sensitive credentials
+
+## 📖 API Reference
+
+### REST Endpoints
+
+#### Get Connections
+```
+GET /api/mcp/connections
+Headers: x-user-id: string
+Response: { success: boolean, connections: MCPConnection[] }
+```
+
+#### Create Connection
+```
+POST /api/mcp/connections
+Headers: x-user-id: string
+Body: { serverId: string, credentials: MCPCredentials }
+Response: { success: boolean, connection: MCPConnection }
+```
+
+#### Execute MCP Operation
+```
+POST /api/mcp/execute
+Headers: x-user-id: string
+Body: { userRequest: string, conversationContext?: object }
+Response: MCPResponse
+```
+
+#### Get Available Servers
+```
+GET /api/mcp/servers
+Response: { success: boolean, servers: MCPServerConfig[] }
+```
+
+## 🧪 Testing
+
+```bash
+# Run type checking
+npm run type-check
+
+# Run linting
+npm run lint
+
+# Build for production
+npm run build
+```
+
+## 🚢 Deployment
+
+1. **Build the application**:
+   ```bash
+   npm run build
+   ```
+
+2. **Set production environment variables**
+
+3. **Deploy to your platform**:
+   - Vercel: `vercel --prod`
+   - Netlify: `netlify deploy --prod`
+   - Docker: `docker build -t nexus-ai .`
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
 
 1. Fork the repository
 2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-## License
+## 📄 License
 
 MIT License - see LICENSE file for details
 
-## Support
+## 🙏 Acknowledgments
 
-For issues and questions, please open an issue on GitHub.
+- Built with [Next.js](https://nextjs.org/)
+- Styled with [Tailwind CSS](https://tailwindcss.com/)
+- Components from [Radix UI](https://www.radix-ui.com/)
+- Integrations powered by official SDKs
+
+## 📞 Support
+
+For questions and support:
+- Create an issue on GitHub
+- Email: support@nexusai.dev
+- Discord: [Join our community](https://discord.gg/nexusai)
+
+---
+
+**Built with ❤️ by the Nexus AI team**

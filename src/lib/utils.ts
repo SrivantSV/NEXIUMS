@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -120,4 +121,11 @@ export function getFileLanguage(filename: string): string {
   };
 
   return languageMap[ext || ''] || 'text';
+=======
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+>>>>>>> origin/claude/mcp-integration-framework-011CUzv5zqoN6kUzRrxTq7Br
 }
