@@ -3,11 +3,13 @@
 /**
  * Chat Context Provider
  * Manages chat state, messages, and real-time communication
+ * Integrates quota enforcement and feature gates
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useUser } from './UserContext';
 import { useAI } from './AIContext';
+import { checkQuotaLimit, checkModelAccess, checkFeatureAccess } from '@/lib/billing/feature-gates';
 import type { ChatMessage } from '@/types/chat';
 
 export interface ChatContextType {
@@ -124,6 +126,42 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       try {
         setLoading(true);
         setError(null);
+
+        // ===== QUOTA AND FEATURE GATE CHECKS =====
+
+        // 1. Check quota limit
+        const tier = profile.subscription_tier || 'free';
+        const monthlyRequests = profile.monthly_requests || 0;
+        const quotaCheck = checkQuotaLimit(tier, monthlyRequests);
+
+        if (!quotaCheck.allowed) {
+          setError(new Error(quotaCheck.reason));
+          setLoading(false);
+          return;
+        }
+
+        // 2. Check smart router access (if needed)
+        if (useSmartRouter) {
+          const smartRouterCheck = checkFeatureAccess(tier, 'smart-router');
+          if (!smartRouterCheck.allowed) {
+            setError(new Error(smartRouterCheck.reason));
+            setLoading(false);
+            return;
+          }
+        }
+
+        // 3. Check model access (if specific model selected)
+        const targetModel = options.model || selectedModel;
+        if (targetModel && !useSmartRouter) {
+          const modelCheck = checkModelAccess(tier, targetModel);
+          if (!modelCheck.allowed) {
+            setError(new Error(modelCheck.reason));
+            setLoading(false);
+            return;
+          }
+        }
+
+        // ===== END CHECKS =====
 
         // Add user message
         const userMessage = addMessage({
